@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useRef } from 'react';
 import MosaicCanvas from '@/components/MosaicCanvas';
-import { generateMosaicLayout, MosaicImage, MosaicPlacement } from '@/lib/mosaicEngine';
 import { generateCanvasMosaic } from '@/lib/canvasMosaicEngine';
 // WS Client removed - System relies on Polling
 
@@ -19,12 +18,7 @@ export default function DisplayPage() {
   const [engine, setEngine] = useState<MosaicEngine>('AI');
   const [images, setImages] = useState<Image[]>([]);
 
-  const [placements, setPlacements] = useState<MosaicPlacement[]>([]);
-  const [syncStartData, setSyncStartData] = useState<{
-    startedAt: number;
-    batchSize: number;
-    intervalMs: number;
-  } | undefined>(undefined);
+
 
   const canvasContainerRef = useRef<HTMLDivElement>(null);
   const canvasControllerRef = useRef<{ destroy: () => void } | null>(null);
@@ -92,14 +86,9 @@ export default function DisplayPage() {
       if (!isMosaicRunning) setIsMosaicRunning(true);
 
       if (engine === 'AI') {
-        const mosaicImages: MosaicImage[] = images.map(img => ({
-          url: img.url,
-          isPresident: false 
-        }));
-        
-        const layout = generateMosaicLayout(mosaicImages);
-        setPlacements(layout);
-        setIsCanvasReady(false); // Helper state not used for AI but good to reset
+         // AI Engine (MosaicCanvas) now handles placement internally
+         // We just verify we have images
+         setIsCanvasReady(true);
       } else if (engine === 'CANVAS') {
          if (canvasContainerRef.current) {
             const container = canvasContainerRef.current;
@@ -138,7 +127,22 @@ export default function DisplayPage() {
     };
   }, [mode, images, engine, isMosaicRunning]);
 
+  const enterFullScreen = () => {
+    const elem = document.documentElement
+    if (elem.requestFullscreen) {
+      elem.requestFullscreen().catch((err) => console.log(err))
+    } else if ((elem as any).webkitRequestFullscreen) {
+      // Safari
+      ;(elem as any).webkitRequestFullscreen()
+    } else if ((elem as any).msRequestFullscreen) {
+      // IE11
+      ;(elem as any).msRequestFullscreen()
+    }
+  }
+
   const handleGenerateMosaic = async (selectedEngine: MosaicEngine) => {
+    enterFullScreen() // Trigger immediately on user click
+
     try {
       // Optimistic update for Engine setting only
       setEngine(selectedEngine);
@@ -196,10 +200,7 @@ export default function DisplayPage() {
             </div>
         ) : (
             <MosaicCanvas 
-                placements={placements} 
-                startedAt={syncStartData?.startedAt}
-                batchSize={syncStartData?.batchSize}
-                intervalMs={syncStartData?.intervalMs}
+                imageUrls={images.map(img => img.url)}
             />
         )
       ) : (
@@ -261,10 +262,8 @@ export default function DisplayPage() {
                 const res = await fetch('/api/reset', { method: 'POST' });
                 if (res.ok) {
                   setImages([]);
-                  setPlacements([]);
                   setMode('UPLOAD');
                   setIsMosaicRunning(false);
-                  setSyncStartData(undefined);
                 }
               } catch (e) {
                 console.error(e);
@@ -293,10 +292,8 @@ export default function DisplayPage() {
                 const res = await fetch('/api/reset', { method: 'POST' });
                 if (res.ok) {
                   setImages([]);
-                  setPlacements([]);
                   setMode('UPLOAD');
                   setIsMosaicRunning(false);
-                  setSyncStartData(undefined);
                 }
               } catch (e) {
                 console.error(e);
