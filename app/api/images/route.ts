@@ -1,24 +1,21 @@
-import { NextResponse } from 'next/server';
-import dbConnect from '@/lib/mongodb';
-import Image from '@/models/Image';
+import { NextResponse } from 'next/server'
+import dbConnect from '@/lib/mongodb'
+import Image from '@/models/Image'
 
-export const dynamic = 'force-dynamic';
+export const dynamic = 'force-dynamic'
 
 export async function GET() {
   try {
-    await dbConnect();
+    await dbConnect()
 
-    const images = await Image.find({ isPresident: false })
-      .sort({ createdAt: -1 })
-      .limit(50)
-      .lean();
+    const images = await Image.find().sort({ createdAt: -1 }).limit(50).lean()
 
-    return NextResponse.json(images, { status: 200 });
+    return NextResponse.json(images, { status: 200 })
   } catch (error) {
-    console.error('Error in GET /api/images:', error);
+    console.error('Error in GET /api/images:', error)
     return NextResponse.json(
       { error: 'Internal Server Error' },
       { status: 500 }
-    );
+    )
   }
 }
