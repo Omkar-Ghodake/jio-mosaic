@@ -5,6 +5,7 @@ import MosaicCanvas from '@/components/MosaicCanvas'
 import { generateCanvasMosaic } from '@/lib/canvasMosaicEngine'
 import NextImage from 'next/image'
 import { motion } from 'framer-motion'
+import Image from 'next/image'
 
 // ─────────────────────────────────────────────
 // Types
@@ -178,7 +179,7 @@ export default function DisplayPage() {
   const enterFullScreen = () => {
     const elem = document.documentElement
     if (elem.requestFullscreen) {
-      elem.requestFullscreen().catch(() => {})
+      elem.requestFullscreen().catch(() => { })
     }
   }
 
@@ -282,11 +283,12 @@ export default function DisplayPage() {
 
           <div className='absolute inset-0 bg-white/10 backdrop-blur-lg flex flex-col items-center justify-center text-7xl font-semibold space-y-10'>
             <h1>KISNE BANAYA JIO?</h1>
-            <NextImage
+            <Image
               src='/public_qr.png'
               alt='public_qr'
               width={300}
               height={300}
+              className='brightness-0 invert backdrop-blur-lg shadow-xl rounded-4xl p-2 '
             />
           </div>
         </div>
@@ -299,11 +301,10 @@ export default function DisplayPage() {
               <div className='flex gap-2'>
                 <button
                   onClick={() => handleGenerateMosaic('AI')}
-                  className={`px-6 py-3 rounded-lg font-bold text-sm tracking-wide transition-all duration-300 transform hover:scale-105 ${
-                    engine === 'AI'
-                      ? 'bg-linear-to-r from-blue-600 to-indigo-600 text-white shadow-blue-500/30 shadow-lg'
-                      : 'bg-white/5 text-neutral-400 border border-white/10 hover:bg-white/10 hover:text-white'
-                  }`}
+                  className={`px-6 py-3 rounded-lg font-bold text-sm tracking-wide transition-all duration-300 transform hover:scale-105 ${engine === 'AI'
+                    ? 'bg-linear-to-r from-blue-600 to-indigo-600 text-white shadow-blue-500/30 shadow-lg'
+                    : 'bg-white/5 text-neutral-400 border border-white/10 hover:bg-white/10 hover:text-white'
+                    }`}
                 >
                   Create
                 </button>
