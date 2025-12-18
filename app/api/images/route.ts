@@ -8,7 +8,7 @@ export async function GET() {
   try {
     await dbConnect()
 
-    const images = await Image.find().limit(50).lean()
+    const images = await Image.find().lean()
 
     return NextResponse.json(images, { status: 200 })
   } catch (error) {

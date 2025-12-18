@@ -1,8 +1,13 @@
 'use client'
 import React, { useEffect, useRef, useState } from 'react'
 
+export interface MosaicImage {
+  url: string
+  isPresident: boolean
+}
+
 interface MosaicCanvasProps {
-  imageUrls: string[]
+  images: MosaicImage[]
 }
 
 interface Placement {
@@ -31,7 +36,7 @@ interface ActiveTile {
   target: TileRect
 }
 
-export default function MosaicCanvas({ imageUrls }: MosaicCanvasProps) {
+export default function MosaicCanvas({ images }: MosaicCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const placementsRef = useRef<Placement[]>([]) // Store placement data for hit testing
   const [downloadUrl, setDownloadUrl] = useState('')
@@ -76,7 +81,8 @@ export default function MosaicCanvas({ imageUrls }: MosaicCanvasProps) {
   }
 
   useEffect(() => {
-    if (!imageUrls || imageUrls.length === 0) return
+    console.log('img urls in cav:', images)
+    if (!images || images.length === 0) return
 
     setHoveredImage(null)
     placementsRef.current = []
@@ -85,20 +91,23 @@ export default function MosaicCanvas({ imageUrls }: MosaicCanvasProps) {
     const loadImages = async () => {
       setIsGenerating(true)
 
-      const processImage = (url: string) => {
-        return new Promise<HTMLImageElement | null>((resolve, reject) => {
-          const img = new Image()
-          img.crossOrigin = 'Anonymous' // Crucial for Cloudinary/CORS
-          img.src = url
-          img.onload = () => resolve(img)
-          img.onerror = () => resolve(null) // Convert error to null to filter later
-        })
+      const processImage = (data: MosaicImage) => {
+        return new Promise<{ img: HTMLImageElement; isPresident: boolean } | null>(
+          (resolve, reject) => {
+            const img = new Image()
+            img.crossOrigin = 'Anonymous' // Crucial for Cloudinary/CORS
+            img.src = data.url
+            img.onload = () => resolve({ img, isPresident: data.isPresident })
+            img.onerror = () => resolve(null) // Convert error to null to filter later
+          }
+        )
       }
 
       try {
-        const results = await Promise.all(imageUrls.map(processImage))
+        const results = await Promise.all(images.map(processImage))
         const validImages = results.filter(
-          (img): img is HTMLImageElement => img !== null
+          (result): result is { img: HTMLImageElement; isPresident: boolean } =>
+            result !== null
         )
 
         if (validImages.length > 0) {
@@ -113,9 +122,11 @@ export default function MosaicCanvas({ imageUrls }: MosaicCanvasProps) {
     }
 
     loadImages()
-  }, [imageUrls])
+  }, [images])
 
-  const generateMosaic = (loadedImages: HTMLImageElement[]) => {
+  const generateMosaic = (
+    loadedData: { img: HTMLImageElement; isPresident: boolean }[]
+  ) => {
     const canvas = canvasRef.current
     if (!canvas) return // Guard clause
     const ctx = canvas.getContext('2d')
@@ -134,16 +145,24 @@ export default function MosaicCanvas({ imageUrls }: MosaicCanvasProps) {
     canvas.height = height
 
     // Clear background
+    // Clear background with detailed gradient matching app theme
+    // bg-[radial-gradient(ellipse_at_center,_#3E0A86_0%,_#1A0761_40%,_#030055_75%)]
+    // Canvas radial gradient is circular. To simulate ellipse, we could scale, but for background circular is often preferred or close enough.
+    // Let's ensure it covers well.
+    const maxDim = Math.max(width, height)
     const gradient = ctx.createRadialGradient(
       width / 2,
       height / 2,
-      100,
+      0, // Start from center
       width / 2,
       height / 2,
-      width
+      maxDim * 0.8 // Extend outwards
     )
-    gradient.addColorStop(0, '#041d40') // Deep Blue Center
-    gradient.addColorStop(1, '#041d40') // Slightly darker Blue Edges (Seamless)
+    gradient.addColorStop(0, '#182398')   // 0%
+    gradient.addColorStop(0.4, '#001476') // 40%
+    gradient.addColorStop(0.75, '#000D4C')// 75%
+    gradient.addColorStop(1, '#000D4C')   // Fill remaining
+    
     ctx.fillStyle = gradient
     ctx.fillRect(0, 0, width, height)
 
@@ -245,6 +264,23 @@ export default function MosaicCanvas({ imageUrls }: MosaicCanvasProps) {
     const maxAttempts = 100000
     const baseSize = fontSize / 14
 
+    // Separate President Images
+    const presidentData = loadedData.find((d) => d.isPresident)
+    const validCommonData = loadedData.filter((d) => !d.isPresident)
+    
+    // If no common images (only president?), use president as common too? 
+    // Or just fallback to whatever we have if list is empty.
+    // Requirement: President ONLY in dot.
+    // If we only have 1 image and it's president, we can't fill the mosaic.
+    // Assuming sufficient images. If not, we might have to reuse president?
+    // Let's strictly follow: "President image ... should be seen anywhere else" (interpreted as NOT seen).
+    // So if validCommonData is empty, we have a problem. 
+    // Fallback: If no common images, use president image but maybe warn? 
+    // For now, assume common images exist. If not, use all loadedData to prevent crash.
+    const poolData = validCommonData.length > 0 ? validCommonData : loadedData
+
+    const loadedImages = poolData.map(d => d.img) // Backwards compatibility for logic below
+
     // --- Performance Optimization: Create Cached Thumbnails ---
     // Increase thumb size for better animation quality (3x base size)
     const thumbSize = Math.ceil(baseSize * 3)
@@ -330,7 +366,8 @@ export default function MosaicCanvas({ imageUrls }: MosaicCanvasProps) {
     const dotY = centerY - fontSize * 0.38
 
     // Dot Image Logic
-    const dotImage = loadedImages[0]
+    // Use president image if available, else first common image
+    const dotImage = presidentData ? presidentData.img : loadedImages[0]
     placements.push({
       cx: iCenterX,
       cy: dotY,
@@ -431,12 +468,29 @@ export default function MosaicCanvas({ imageUrls }: MosaicCanvasProps) {
       ctx.fillRect(0, 0, width, height)
 
       // Draw Title "HAMNE BANAYA"
+      // Full-width Glow Gradient behind text
+      const glowHeight = height * 0.15
+      const textGlow = ctx.createLinearGradient(0, 0, 0, glowHeight)
+      textGlow.addColorStop(0, 'rgba(216, 180, 254, 0.2)') // Top edge light
+      textGlow.addColorStop(1, 'rgba(216, 180, 254, 0)')   // Fade out
+      
+      ctx.save()
+      ctx.fillStyle = textGlow
+      ctx.fillRect(0, 0, width, glowHeight)
+      ctx.restore()
+
+      // Draw Title "HAMNE BANAYA"
       ctx.save()
       ctx.font = `600 ${fontSize * 0.15}px Arial, sans-serif`
       ctx.fillStyle = 'white'
       ctx.textAlign = 'center'
       ctx.textBaseline = 'top'
       ctx.letterSpacing = '0.2em'
+      
+      // Keep subtle shadow for legibility
+      ctx.shadowColor = '#d8b4fe'
+      ctx.shadowBlur = fontSize * 0.05
+      
       ctx.fillText('HAMNE BANAYA', width / 2, height * 0.05)
       ctx.restore()
 
@@ -613,6 +667,17 @@ export default function MosaicCanvas({ imageUrls }: MosaicCanvasProps) {
           ctx.fillStyle = gradient
           ctx.fillRect(0, 0, width, height)
 
+          // Full-width Glow Gradient behind text (Final)
+          const glowHeight = height * 0.15
+          const textGlow = ctx.createLinearGradient(0, 0, 0, glowHeight)
+          textGlow.addColorStop(0, 'rgba(216, 180, 254, 0.2)')
+          textGlow.addColorStop(1, 'rgba(216, 180, 254, 0)')
+          
+          ctx.save()
+          ctx.fillStyle = textGlow
+          ctx.fillRect(0, 0, width, glowHeight)
+          ctx.restore()
+
           // Draw Title "HAMNE BANAYA" (Final)
           ctx.save()
           ctx.font = `600 ${fontSize * 0.15}px Arial, sans-serif`
@@ -620,6 +685,11 @@ export default function MosaicCanvas({ imageUrls }: MosaicCanvasProps) {
           ctx.textAlign = 'center'
           ctx.textBaseline = 'top'
           ctx.letterSpacing = '0.2em'
+
+          // Glow Effect
+          ctx.shadowColor = '#d8b4fe'
+          ctx.shadowBlur = fontSize * 0.05
+
           ctx.fillText('HAMNE BANAYA', width / 2, height * 0.05)
           ctx.restore()
 
@@ -664,7 +734,7 @@ export default function MosaicCanvas({ imageUrls }: MosaicCanvasProps) {
 
   useEffect(() => {
     // Start the auto-popup loop only when generation is done and we have images
-    if (isGenerating || !imageUrls || imageUrls.length === 0) return
+    if (isGenerating || !images || images.length === 0) return
 
     const triggerPopup = () => {
       // Don't auto-popup if user has interacted recently (e.g., last 2 seconds)
@@ -741,7 +811,7 @@ export default function MosaicCanvas({ imageUrls }: MosaicCanvasProps) {
       clearTimeout(initialTimer)
       clearInterval(intervalId)
     }
-  }, [isGenerating, imageUrls, activeTile, isExpanded])
+  }, [isGenerating, images, activeTile, isExpanded])
 
   const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
     lastInteractionRef.current = Date.now()
@@ -917,7 +987,6 @@ export default function MosaicCanvas({ imageUrls }: MosaicCanvasProps) {
               backgroundRepeat: 'no-repeat',
               backgroundColor: isExpanded ? 'rgba(0,0,0,0.4)' : 'rgba(0,0,0,0)',
               backdropFilter: isExpanded ? 'blur(12px)' : 'none',
-              borderRadius: '16px',
               boxShadow: isExpanded
                 ? '0 0 100px rgba(0,255,0,0.3), inset 0 0 20px rgba(255,255,255,0.1)'
                 : '0 20px 50px rgba(0,0,0,0.8)',
@@ -931,23 +1000,43 @@ export default function MosaicCanvas({ imageUrls }: MosaicCanvasProps) {
 
               transition: 'all 1.2s cubic-bezier(0.19, 1, 0.22, 1)',
               pointerEvents: 'none',
+              // Change border radius to flat bottom when expanded (to connect with footer)
+              borderRadius: isExpanded ? '16px 16px 0 0' : '16px',
             }}
           >
+            {/* White Footer Card Section */}
             <div
               style={{
                 position: 'absolute',
-                bottom: '-60px',
+                top: '100%', // Position directly below the image
+                left: 0,
                 width: '100%',
+                height: 'auto',
+                background: 'white',
+                padding: '12px 0',
+                borderRadius: '0 0 16px 16px', // Rounded bottom corners
                 textAlign: 'center',
-                color: 'white',
                 opacity: isExpanded ? 1 : 0,
-                transition: 'opacity 0.6s 0.4s',
-                fontSize: '1rem',
-                fontWeight: 'bold',
-                textShadow: '0 4px 8px black',
+                transform: isExpanded ? 'scale(1)' : 'scale(0.5)',
+                transformOrigin: 'top center',
+                transition: isExpanded 
+                  ? 'opacity 0.6s 0.4s, transform 0.6s 0.4s' // Enter: Delay
+                  : 'opacity 0.3s, transform 0.3s',          // Exit: Fast
+                boxShadow: isExpanded ? '0 10px 30px rgba(0,0,0,0.5)' : 'none',
               }}
             >
-              Featured Selfie
+              <span
+                style={{
+                  color: '#030055', // Deep Jio Blue
+                  fontSize: '0.9rem', // Reduced to fit single line
+                  fontWeight: '800',
+                  fontStyle: 'italic',
+                  letterSpacing: '0.02em',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                Featured Selfie
+              </span>
             </div>
           </div>
         )}

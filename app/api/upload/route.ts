@@ -59,6 +59,9 @@ export async function POST(request: Request) {
     const isPresident = formData.get('isPresident') === 'true'
     const presidentAuthId = process.env.PRESIDENT_AUTH_ID
 
+    console.log('isPresident:', isPresident)
+    console.log('presidentAuthId:', presidentAuthId)
+
     // 3. President Auth Validation
     if (isPresident) {
       const authId = formData.get('authId')
