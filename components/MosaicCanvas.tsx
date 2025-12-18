@@ -43,14 +43,9 @@ export default function MosaicCanvas({ imageUrls }: MosaicCanvasProps) {
 
   const containerRef = useRef<HTMLDivElement>(null)
 
-
   // Track user interaction to prevent auto-popups while exploring
   const lastInteractionRef = useRef(0)
   const popupCountRef = useRef(0)
-
-
-
-
 
   // Calculate screen rect for a tile
   const getTileRect = (p: Placement): TileRect | null => {
@@ -102,7 +97,9 @@ export default function MosaicCanvas({ imageUrls }: MosaicCanvasProps) {
 
       try {
         const results = await Promise.all(imageUrls.map(processImage))
-        const validImages = results.filter((img): img is HTMLImageElement => img !== null)
+        const validImages = results.filter(
+          (img): img is HTMLImageElement => img !== null
+        )
 
         if (validImages.length > 0) {
           generateMosaic(validImages)
@@ -219,7 +216,7 @@ export default function MosaicCanvas({ imageUrls }: MosaicCanvasProps) {
     const { totalW, j, i, o, gap: textGap } = metrics
 
     const startX = (width - totalW) / 2
-    const centerY = height * 0.70 // Shifted down further for gap
+    const centerY = height * 0.7 // Shifted down further for gap
 
     let cursorX = startX
 
@@ -329,7 +326,7 @@ export default function MosaicCanvas({ imageUrls }: MosaicCanvasProps) {
 
     // --- 3. I-Dot (Big Circle) ---
     const iCenterX = iX + i.width / 2
-    const dotRadius = fontSize * 0.10
+    const dotRadius = fontSize * 0.1
     const dotY = centerY - fontSize * 0.38
 
     // Dot Image Logic
@@ -343,7 +340,7 @@ export default function MosaicCanvas({ imageUrls }: MosaicCanvasProps) {
       img: dotImage,
       thumb: dotImage, // Dot uses High Res for everything
       isDot: true,
-      group: 'DOT'
+      group: 'DOT',
     })
 
     placementsRef.current = placements
@@ -357,20 +354,20 @@ export default function MosaicCanvas({ imageUrls }: MosaicCanvasProps) {
       return x === 0
         ? 0
         : x === 1
-          ? 1
-          : Math.pow(2, -10 * x) * Math.sin((x * 10 - 0.75) * c4) + 1
+        ? 1
+        : Math.pow(2, -10 * x) * Math.sin((x * 10 - 0.75) * c4) + 1
     }
 
     // Soft Back/Overshoot for smoother particle arrival
     const easeOutBack = (x: number): number => {
-      const c1 = 1.70158;
-      const c3 = c1 + 1;
-      return 1 + c3 * Math.pow(x - 1, 3) + c1 * Math.pow(x - 1, 2);
+      const c1 = 1.70158
+      const c3 = c1 + 1
+      return 1 + c3 * Math.pow(x - 1, 3) + c1 * Math.pow(x - 1, 2)
     }
 
     // Cubic Out for smooth slide
     const easeOutCubic = (x: number): number => {
-      return 1 - Math.pow(1 - x, 3);
+      return 1 - Math.pow(1 - x, 3)
     }
 
     // Timings (ms)
@@ -387,10 +384,10 @@ export default function MosaicCanvas({ imageUrls }: MosaicCanvasProps) {
     const TOTAL_DURATION = DOT_START + DOT_DURATION + 1000
 
     // Prepare Animation State
-    // We want particles to start "scattered". 
+    // We want particles to start "scattered".
     // "Gathering together" -> Start far away, end at target.
 
-    const animPlacements = placements.map(p => {
+    const animPlacements = placements.map((p) => {
       // Random scatter origin
       // Scatter range: +/- 400px to 800px?
       const angle = Math.random() * Math.PI * 2
@@ -418,7 +415,7 @@ export default function MosaicCanvas({ imageUrls }: MosaicCanvasProps) {
         currScale: 0,
         currOpacity: 0,
         // Add slight randomness to duration per particle for organic feel
-        durationOffset: (Math.random() - 0.5) * 400
+        durationOffset: (Math.random() - 0.5) * 400,
       }
     })
 
@@ -443,7 +440,7 @@ export default function MosaicCanvas({ imageUrls }: MosaicCanvasProps) {
       ctx.fillText('HAMNE BANAYA', width / 2, height * 0.05)
       ctx.restore()
 
-      // Restore mask context logic? 
+      // Restore mask context logic?
       // Logic: Draw tiles -> Apply Mask.
       // But animations might be OUTSIDE the mask if they are flying in.
       // "Mosaic fragments" implies they are shaped.
@@ -457,10 +454,10 @@ export default function MosaicCanvas({ imageUrls }: MosaicCanvasProps) {
       let completed = false
 
       // Loop through all particles
-      // Optimization: Iterate only relevant groups based on time? 
+      // Optimization: Iterate only relevant groups based on time?
       // Doing 6000 particles JS loop is fine.
 
-      animPlacements.forEach(p => {
+      animPlacements.forEach((p) => {
         // Determine phase
         let startT = 0
         let dur = LETTER_ANIM_DURATION + p.durationOffset
@@ -480,7 +477,8 @@ export default function MosaicCanvas({ imageUrls }: MosaicCanvasProps) {
           // Not started yet.
           // "Screen starts empty" -> Do not draw.
           // "Small mosaic particles subtly floating hinting formation" -> maybe draw tiny faint ones?
-          if (t > -1000 && !p.isDot) { // Hint 1s before
+          if (t > -1000 && !p.isDot) {
+            // Hint 1s before
             // Tiny drift
             // const drift = Math.sin((elapsed + p.cx)/500) * 10
             // ctx.globalAlpha = 0.1
@@ -531,11 +529,11 @@ export default function MosaicCanvas({ imageUrls }: MosaicCanvasProps) {
 
         // Dot Handling (Unique)
         if (p.isDot) {
-          // DOT uses the original high-res image 
+          // DOT uses the original high-res image
           // (p.img is set to loadedImages[0] below, not a thumbnail)
 
           // Circle
-          const radius = (p.w / 2)
+          const radius = p.w / 2
           const dropProgress = Math.min(t / DOT_DURATION, 1)
           const dropEased = easeOutBack(dropProgress)
 
@@ -554,7 +552,7 @@ export default function MosaicCanvas({ imageUrls }: MosaicCanvasProps) {
           const imgWidth = p.img.width
           const imgHeight = p.img.height
 
-          const ratio = Math.max((p.w) / imgWidth, (p.h) / imgHeight)
+          const ratio = Math.max(p.w / imgWidth, p.h / imgHeight)
           const nw = imgWidth * ratio
           const nh = imgHeight * ratio
           const nix = p.cx - p.w / 2 + (p.w - nw) / 2
@@ -566,7 +564,7 @@ export default function MosaicCanvas({ imageUrls }: MosaicCanvasProps) {
           // Standard Tile (Use Thumbnail for Performance)
           // Optimization: Don't draw if opacity ~ 0
           if (opacity > 0.01) {
-            // Thumbnails are pre-cropped squares. 
+            // Thumbnails are pre-cropped squares.
             // Just draw whole thing scaling to target w/h
             ctx.drawImage(p.thumb, x - p.w / 2, y - p.h / 2, p.w, p.h)
           }
@@ -588,11 +586,21 @@ export default function MosaicCanvas({ imageUrls }: MosaicCanvasProps) {
         perfectMosaicCanvas.height = height
         const pmCtx = perfectMosaicCanvas.getContext('2d')
         if (pmCtx) {
-          placements.forEach(p => {
+          placements.forEach((p) => {
             const minDim = Math.min(p.img.width, p.img.height)
             const sx = (p.img.width - minDim) / 2
             const sy = (p.img.height - minDim) / 2
-            pmCtx.drawImage(p.img, sx, sy, minDim, minDim, p.cx - p.w / 2, p.cy - p.h / 2, p.w, p.h)
+            pmCtx.drawImage(
+              p.img,
+              sx,
+              sy,
+              minDim,
+              minDim,
+              p.cx - p.w / 2,
+              p.cy - p.h / 2,
+              p.w,
+              p.h
+            )
           })
 
           // Mask
@@ -618,7 +626,7 @@ export default function MosaicCanvas({ imageUrls }: MosaicCanvasProps) {
           ctx.drawImage(perfectMosaicCanvas, 0, 0)
 
           // Draw Dot (Manually on top)
-          const dotP = placements.find(x => x.isDot)
+          const dotP = placements.find((x) => x.isDot)
           if (dotP) {
             ctx.save()
             ctx.beginPath()
@@ -631,7 +639,17 @@ export default function MosaicCanvas({ imageUrls }: MosaicCanvasProps) {
             // Recalc standard draw
             const dw = dotP.w
             const dh = dotP.h
-            ctx.drawImage(dotP.img, sx, sy, minDim, minDim, dotP.cx - dw / 2, dotP.cy - dh / 2, dw, dh)
+            ctx.drawImage(
+              dotP.img,
+              sx,
+              sy,
+              minDim,
+              minDim,
+              dotP.cx - dw / 2,
+              dotP.cy - dh / 2,
+              dw,
+              dh
+            )
             ctx.restore()
           }
         }
@@ -826,7 +844,7 @@ export default function MosaicCanvas({ imageUrls }: MosaicCanvasProps) {
         // Removed fixed marginTop of 40px to fit container
         background: '#041d40', // Match canvas edge for seamless letterboxing (Solid Color)
       }}
-      className="fixed inset-0 w-screen min-h-screen flex flex-col items-center justify-center p-0 m-0 overflow-hidden" // Force full viewport
+      className='fixed inset-0 w-screen min-h-screen flex flex-col items-center justify-center p-0 m-0 overflow-hidden' // Force full viewport
     >
       <div
         ref={containerRef}
@@ -844,11 +862,8 @@ export default function MosaicCanvas({ imageUrls }: MosaicCanvasProps) {
           justifyContent: 'center',
           alignItems: 'center',
         }}
-        className="relative w-full min-h-screen"
+        className='relative w-full min-h-screen'
       >
-
-
-
         <canvas
           ref={canvasRef}
           onMouseMove={handleMouseMove}
@@ -861,7 +876,7 @@ export default function MosaicCanvas({ imageUrls }: MosaicCanvasProps) {
             objectFit: 'contain',
             display: 'block',
           }}
-          className="w-full h-full object-contain"
+          className='w-full h-full object-contain'
         />
 
         {/* Hover Popup (Follows Cursor) */}
@@ -960,22 +975,22 @@ export default function MosaicCanvas({ imageUrls }: MosaicCanvasProps) {
               width: '60px',
               height: '60px',
             }}
-            className="hover:scale-105 transition-transform active:scale-95 text"
-            title="Download Mosaic"
+            className='hover:scale-105 transition-transform active:scale-95 text'
+            title='Download Mosaic'
           >
             <svg
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
+              width='24'
+              height='24'
+              viewBox='0 0 24 24'
+              fill='none'
+              stroke='currentColor'
+              strokeWidth='2.5'
+              strokeLinecap='round'
+              strokeLinejoin='round'
             >
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-              <polyline points="7 10 12 15 17 10" />
-              <line x1="12" y1="15" x2="12" y2="3" />
+              <path d='M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4' />
+              <polyline points='7 10 12 15 17 10' />
+              <line x1='12' y1='15' x2='12' y2='3' />
             </svg>
           </a>
         )}
