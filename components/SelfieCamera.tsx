@@ -87,11 +87,11 @@ export default function SelfieCamera({
   }
 
   return (
-    <div className='fixed inset-0 bg-black z-50 flex flex-col items-center justify-center p-4'>
+    <div className='fixed inset-0 bg-black z-50 flex flex-col items-center justify-center pt-4'>
       {/* Hidden Canvas for capture */}
       <canvas ref={canvasRef} className='hidden' />
 
-      <div className='w-full max-w-md bg-neutral-900 rounded-xl overflow-hidden shadow-2xl relative'>
+      <div className='w-full h-full max-w-md bg-neutral-900 rounded-xl overflow-hidden relative'>
         {error ? (
           <div className='p-8 text-center text-red-400'>
             <p className='mb-4'>{error}</p>
@@ -101,7 +101,7 @@ export default function SelfieCamera({
           </div>
         ) : (
           <>
-            <div className='relative aspect-3/4 bg-black'>
+            <div className='relative  bg-black h-[85%]'>
               <video
                 ref={videoRef}
                 autoPlay
@@ -111,7 +111,7 @@ export default function SelfieCamera({
               />
             </div>
 
-            <div className='p-6 flex items-center justify-between bg-neutral-800'>
+            <div className='relative p-6 flex items-center justify-between bg-neutral-800'>
               <button
                 onClick={onCancel}
                 className='text-white text-sm font-medium px-4 py-2 rounded hover:bg-white/10'
@@ -120,7 +120,7 @@ export default function SelfieCamera({
               </button>
               <button
                 onClick={handleCapture}
-                className='w-16 h-16 rounded-full bg-white border-4 border-neutral-300 shadow-lg transform active:scale-95 transition-all'
+                className='w-16 h-16 rounded-full bg-white border-4 border-neutral-300 shadow-lg transform active:scale-95 transition-all absolute top1/2 left-1/2 -translate-x-1/2 flex items-center justify-center'
                 aria-label='Take Photo'
               />
               <div className='w-16' /> {/* Spacer for centering */}
