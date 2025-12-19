@@ -1,6 +1,7 @@
 'use client'
 
 import { useRef, useState, useEffect } from 'react'
+import { MdOutlineCameraswitch } from 'react-icons/md'
 
 interface SelfieCameraProps {
   onCapture: (file: File) => void
@@ -15,20 +16,31 @@ export default function SelfieCamera({
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [stream, setStream] = useState<MediaStream | null>(null)
   const [error, setError] = useState<string>('')
+  const [facingMode, setFacingMode] = useState<'user' | 'environment'>('user')
 
-  // Start Camera on Mount
+  // Start Camera
   useEffect(() => {
+    let currentStream: MediaStream | null = null
+
     const startCamera = async () => {
+      // Stop any existing tracks first
+      if (stream) {
+        stream.getTracks().forEach((track) => track.stop())
+      }
+
       try {
         const mediaStream = await navigator.mediaDevices.getUserMedia({
           video: {
-            facingMode: 'user',
+            facingMode: facingMode,
             width: { ideal: 1280 },
             height: { ideal: 720 },
           },
           audio: false,
         })
+
+        currentStream = mediaStream
         setStream(mediaStream)
+
         if (videoRef.current) {
           videoRef.current.srcObject = mediaStream
         }
@@ -41,12 +53,17 @@ export default function SelfieCamera({
     startCamera()
 
     return () => {
-      // Cleanup tracks
-      if (stream) {
-        stream.getTracks().forEach((track) => track.stop())
+      if (currentStream) {
+        currentStream.getTracks().forEach((track) => track.stop())
       }
     }
-  }, []) // Only run once on mount
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [facingMode])
+
+  const toggleCamera = () => {
+    setFacingMode((prev) => (prev === 'user' ? 'environment' : 'user'))
+    console.log('facingMode', facingMode)
+  }
 
   // Handle Capture
   const handleCapture = () => {
@@ -63,9 +80,12 @@ export default function SelfieCamera({
     if (!ctx) return
 
     // Draw video frame to canvas
-    // Flip horizontally for "mirror" effect if using front camera usually expected
-    ctx.translate(canvas.width, 0)
-    ctx.scale(-1, 1)
+    // Flip horizontally ONLY if using front camera
+    if (facingMode === 'user') {
+      ctx.translate(canvas.width, 0)
+      ctx.scale(-1, 1)
+    }
+
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height)
 
     // Convert to File
@@ -87,11 +107,11 @@ export default function SelfieCamera({
   }
 
   return (
-    <div className='fixed inset-0 bg-black z-50 flex flex-col items-center justify-center pt-4'>
+    <div className='fixed inset-0 bg-black z-50 flex flex-col items-center justify-center pt-0'>
       {/* Hidden Canvas for capture */}
       <canvas ref={canvasRef} className='hidden' />
 
-      <div className='w-full h-full max-w-md bg-neutral-900 rounded-xl overflow-hidden relative'>
+      <div className='w-full h-full max-w-md bg-neutral-900  overflow-hidden relative'>
         {error ? (
           <div className='p-8 text-center text-red-400'>
             <p className='mb-4'>{error}</p>
@@ -101,29 +121,46 @@ export default function SelfieCamera({
           </div>
         ) : (
           <>
-            <div className='relative  bg-black h-[85%]'>
+            <div className='relative bg-black h-full'>
               <video
                 ref={videoRef}
                 autoPlay
                 playsInline
                 muted
-                className='w-full h-full object-cover transform -scale-x-100' // Mirror preview
+                className={`w-full h-full object-cover  ${
+                  facingMode === 'user' ? 'transform -scale-x-100' : ''
+                }`}
               />
+
+              {/* Switch Camera Button */}
             </div>
 
-            <div className='relative p-6 flex items-center justify-between bg-neutral-800'>
+            <div className='absolute bottom-5 w-full px-6 flex items-center justify-between'>
               <button
                 onClick={onCancel}
                 className='text-white text-sm font-medium px-4 py-2 rounded hover:bg-white/10'
               >
                 Cancel
               </button>
+
               <button
                 onClick={handleCapture}
-                className='w-16 h-16 rounded-full bg-white border-4 border-neutral-300 shadow-lg transform active:scale-95 transition-all absolute top1/2 left-1/2 -translate-x-1/2 flex items-center justify-center'
+                className='w-16 h-16 rounded-full bg-white border-4 border-neutral-300 shadow-lg transform active:scale-95 transition-all absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center justify-center'
                 aria-label='Take Photo'
               />
-              <div className='w-16' /> {/* Spacer for centering */}
+
+              <button
+                onClick={toggleCamera}
+                className='p-3 rounded-full text-white bg-white/20 transition-colors duration-300 group'
+                type='button'
+                aria-label='Switch Camera'
+              >
+                <MdOutlineCameraswitch
+                  className={`text-3xl group-active:scale-90 transition-all duration-300 ${
+                    facingMode === 'user' ? 'transform -scale-x-100' : ''
+                  }`}
+                />
+              </button>
             </div>
           </>
         )}

@@ -219,7 +219,7 @@ export default function DisplayPage() {
   // ─────────────────────────────────────────────
 
   return (
-    <main className='min-h-screen max-h-screen overflow-hidden text-white relative flex items-center justify-center bg-[radial-gradient(ellipse_at_center,_#3E0A86_0%,_#1A0761_40%,_#030055_75%)]'>
+    <main className={`min-h-screen max-h-screen overflow-hidden text-white relative flex items-center justify-center ${showMosaic ? "bg-[radial-gradient(ellipse_at_center,_#182398_0%,_#001476_40%,_#000D4C_75%)]" : 'bg-[radial-gradient(ellipse_at_center,_#3E0A86_0%,_#1A0761_40%,_#030055_75%)]'}`}>
       {showMosaic ? (
         engine === 'CANVAS' ? (
           <div className='w-full h-full flex items-center justify-center relative'>
@@ -281,7 +281,7 @@ export default function DisplayPage() {
           )}
 
           <div className='absolute inset-0 bg-white/10 backdrop-blur-lg flex flex-col items-center justify-center text-9xl font-semibold space-y-20'>
-            <h1>KISNE BANAYA JIO?</h1>
+            <h1 style={{ fontFamily: 'var(--font-shadows-into-light)' }}>KISNE BANAYA JIO?</h1>
             <Image
               src='/public_qr.png'
               alt='public_qr'

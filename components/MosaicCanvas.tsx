@@ -18,6 +18,7 @@ interface Placement {
   angle: number
   img: HTMLImageElement // High Quality Source (for Final & Popup)
   thumb: HTMLCanvasElement | HTMLImageElement // Optimized Cache (for Animation)
+  blurredThumb?: HTMLCanvasElement | HTMLImageElement // Pre-blocked Cache (for specific animation phase)
   isDot: boolean
   group: 'J' | 'I' | 'O' | 'DOT' // Added group tracking
 }
@@ -92,15 +93,16 @@ export default function MosaicCanvas({ images }: MosaicCanvasProps) {
       setIsGenerating(true)
 
       const processImage = (data: MosaicImage) => {
-        return new Promise<{ img: HTMLImageElement; isPresident: boolean } | null>(
-          (resolve, reject) => {
-            const img = new Image()
-            img.crossOrigin = 'Anonymous' // Crucial for Cloudinary/CORS
-            img.src = data.url
-            img.onload = () => resolve({ img, isPresident: data.isPresident })
-            img.onerror = () => resolve(null) // Convert error to null to filter later
-          }
-        )
+        return new Promise<{
+          img: HTMLImageElement
+          isPresident: boolean
+        } | null>((resolve, reject) => {
+          const img = new Image()
+          img.crossOrigin = 'Anonymous' // Crucial for Cloudinary/CORS
+          img.src = data.url
+          img.onload = () => resolve({ img, isPresident: data.isPresident })
+          img.onerror = () => resolve(null) // Convert error to null to filter later
+        })
       }
 
       try {
@@ -150,21 +152,9 @@ export default function MosaicCanvas({ images }: MosaicCanvasProps) {
     // Canvas radial gradient is circular. To simulate ellipse, we could scale, but for background circular is often preferred or close enough.
     // Let's ensure it covers well.
     const maxDim = Math.max(width, height)
-    const gradient = ctx.createRadialGradient(
-      width / 2,
-      height / 2,
-      0, // Start from center
-      width / 2,
-      height / 2,
-      maxDim * 0.8 // Extend outwards
-    )
-    gradient.addColorStop(0, '#182398')   // 0%
-    gradient.addColorStop(0.4, '#001476') // 40%
-    gradient.addColorStop(0.75, '#000D4C')// 75%
-    gradient.addColorStop(1, '#000D4C')   // Fill remaining
-    
-    ctx.fillStyle = gradient
-    ctx.fillRect(0, 0, width, height)
+    // Clear background
+    // Removed gradient as per user request to be transparent (showing main page bg)
+    ctx.clearRect(0, 0, width, height)
 
     // --- Dynamic Font Sizing (Maximized) ---
     // Create a temporary canvas to measure text
@@ -174,7 +164,7 @@ export default function MosaicCanvas({ images }: MosaicCanvasProps) {
 
     // Initial estimate logic
     let fontSize = height // Start big
-    tempCtx.font = `900 ${fontSize}px Arial, sans-serif`
+    tempCtx.font = `900 ${fontSize}px shadows-into-light, Arial, sans-serif`
 
     const gapFactor = 0.05 // Tracking
 
@@ -212,7 +202,7 @@ export default function MosaicCanvas({ images }: MosaicCanvasProps) {
       metrics = measureJio(fontSize)
     }
 
-    const font = `900 ${fontSize}px Arial, sans-serif`
+    const font = `900 ${fontSize}px shadows-into-light, Arial, sans-serif`
 
     // --- 1. Prepare Mask for "Jıo" ---
     const maskCanvas = document.createElement('canvas')
@@ -267,24 +257,27 @@ export default function MosaicCanvas({ images }: MosaicCanvasProps) {
     // Separate President Images
     const presidentData = loadedData.find((d) => d.isPresident)
     const validCommonData = loadedData.filter((d) => !d.isPresident)
-    
-    // If no common images (only president?), use president as common too? 
+
+    // If no common images (only president?), use president as common too?
     // Or just fallback to whatever we have if list is empty.
     // Requirement: President ONLY in dot.
     // If we only have 1 image and it's president, we can't fill the mosaic.
     // Assuming sufficient images. If not, we might have to reuse president?
     // Let's strictly follow: "President image ... should be seen anywhere else" (interpreted as NOT seen).
-    // So if validCommonData is empty, we have a problem. 
-    // Fallback: If no common images, use president image but maybe warn? 
+    // So if validCommonData is empty, we have a problem.
+    // Fallback: If no common images, use president image but maybe warn?
     // For now, assume common images exist. If not, use all loadedData to prevent crash.
     const poolData = validCommonData.length > 0 ? validCommonData : loadedData
 
-    const loadedImages = poolData.map(d => d.img) // Backwards compatibility for logic below
+    const loadedImages = poolData.map((d) => d.img) // Backwards compatibility for logic below
 
     // --- Performance Optimization: Create Cached Thumbnails ---
     // Increase thumb size for better animation quality (3x base size)
     const thumbSize = Math.ceil(baseSize * 3)
+
+    // Create dual thumbnails: Normal and Blurred
     const thumbnails = loadedImages.map((img) => {
+      // 1. Normal Thumbnail
       const c = document.createElement('canvas')
       c.width = thumbSize
       c.height = thumbSize
@@ -296,7 +289,22 @@ export default function MosaicCanvas({ images }: MosaicCanvasProps) {
         const sy = (img.height - minDim) / 2
         cx.drawImage(img, sx, sy, minDim, minDim, 0, 0, thumbSize, thumbSize)
       }
-      return c
+
+      // 2. Blurred Thumbnail
+      const bc = document.createElement('canvas')
+      bc.width = thumbSize
+      bc.height = thumbSize
+      const bcx = bc.getContext('2d')
+      if (bcx) {
+        bcx.filter = 'blur(6px)' // Bake the blur. 6px at thumbnail scale ~ 2px at screen scale? Check.
+        // Actually, thumbSize is 3x baseSize.
+        // If we want 3px blur on screen (baseSize), and we draw thumb at baseSize scale...
+        // ...then we need 3px * 3 = 9px blur on thumbnail?
+        // Let's try 6px for a good balance of smoothness and perf.
+        bcx.drawImage(c, 0, 0)
+      }
+
+      return { normal: c, blurred: bc }
     })
 
     // Pixel data for hit testing mask
@@ -344,8 +352,8 @@ export default function MosaicCanvas({ images }: MosaicCanvasProps) {
       if (collision) continue
 
       // 4. Place
+      const set = thumbnails[placements.length % thumbnails.length]
       const srcImg = loadedImages[placements.length % loadedImages.length]
-      const thumbImg = thumbnails[placements.length % thumbnails.length]
 
       placements.push({
         cx,
@@ -354,7 +362,8 @@ export default function MosaicCanvas({ images }: MosaicCanvasProps) {
         h,
         angle: 0, // No rotation
         img: srcImg, // High Res
-        thumb: thumbImg, // Low Res
+        thumb: set.normal, // Low Res
+        blurredThumb: set.blurred, // Pre-blurred
         isDot: false,
         group: cx < iX ? 'J' : cx < oX ? 'I' : 'O',
       })
@@ -376,6 +385,7 @@ export default function MosaicCanvas({ images }: MosaicCanvasProps) {
       angle: 0,
       img: dotImage,
       thumb: dotImage, // Dot uses High Res for everything
+      // No blurred thumb for Dot, we'll handle it manually or it doesn't matter as there is only 1 dot
       isDot: true,
       group: 'DOT',
     })
@@ -464,16 +474,17 @@ export default function MosaicCanvas({ images }: MosaicCanvasProps) {
       // 1. Clear Canvas (we need to redraw frame by frame for animation)
       // Optimization: partial clear? No, letters appear sequentially.
       // We can just draw background.
-      ctx.fillStyle = gradient
-      ctx.fillRect(0, 0, width, height)
+      // 1. Clear Canvas (we need to redraw frame by frame for animation)
+      // Transparent background
+      ctx.clearRect(0, 0, width, height)
 
       // Draw Title "HAMNE BANAYA"
       // Full-width Glow Gradient behind text
       const glowHeight = height * 0.15
       const textGlow = ctx.createLinearGradient(0, 0, 0, glowHeight)
       textGlow.addColorStop(0, 'rgba(216, 180, 254, 0.2)') // Top edge light
-      textGlow.addColorStop(1, 'rgba(216, 180, 254, 0)')   // Fade out
-      
+      textGlow.addColorStop(1, 'rgba(216, 180, 254, 0)') // Fade out
+
       ctx.save()
       ctx.fillStyle = textGlow
       ctx.fillRect(0, 0, width, glowHeight)
@@ -481,17 +492,36 @@ export default function MosaicCanvas({ images }: MosaicCanvasProps) {
 
       // Draw Title "HAMNE BANAYA"
       ctx.save()
-      ctx.font = `600 ${fontSize * 0.15}px Arial, sans-serif`
-      ctx.fillStyle = 'white'
+
+      // Animation for Title
+      const titleStart = 100
+      const titleDur = 1000
+      let titleProgress = (elapsed - titleStart) / titleDur
+      if (titleProgress < 0) titleProgress = 0
+      if (titleProgress > 1) titleProgress = 1
+
+      const titleEase = easeOutCubic(titleProgress)
+      const titleOpacity = titleProgress
+      const titleYOffset = (1 - titleEase) * 50 // Slide up 50px
+
+      // Retrieve font family from CSS variable on BODY
+      const fontName =
+        getComputedStyle(document.body)
+          .getPropertyValue('--font-shadows-into-light')
+          .trim() || 'Arial'
+      ctx.font = `600 ${
+        fontSize * 0.15
+      }px ${fontName}, "Shadows Into Light", cursive, Arial`
+      ctx.fillStyle = `rgba(255, 255, 255, ${titleOpacity})`
       ctx.textAlign = 'center'
       ctx.textBaseline = 'top'
       ctx.letterSpacing = '0.2em'
-      
+
       // Keep subtle shadow for legibility
-      ctx.shadowColor = '#d8b4fe'
+      ctx.shadowColor = `rgba(216, 180, 254, ${titleOpacity})`
       ctx.shadowBlur = fontSize * 0.05
-      
-      ctx.fillText('HAMNE BANAYA', width / 2, height * 0.05)
+
+      ctx.fillText('HUMNE BANAYA', width / 2, height * 0.05 + titleYOffset)
       ctx.restore()
 
       // Restore mask context logic?
@@ -510,6 +540,10 @@ export default function MosaicCanvas({ images }: MosaicCanvasProps) {
       // Loop through all particles
       // Optimization: Iterate only relevant groups based on time?
       // Doing 6000 particles JS loop is fine.
+
+      // Enable Blur for "Raw" phase
+      // Optimization: Removed global filter.
+      // ctx.filter = 'blur(3px)' <-- REMOVED
 
       animPlacements.forEach((p) => {
         // Determine phase
@@ -583,6 +617,14 @@ export default function MosaicCanvas({ images }: MosaicCanvasProps) {
 
         // Dot Handling (Unique)
         if (p.isDot) {
+          // Temporarily disable blur for Dot? User said "images in mosaic".
+          // Dot is part of mosaic. Let's keep it blurred or maybe sharper?
+          // "Raw mosaic should have blurred images".
+          // We can apply blur filter JUST for the dot if needed, but it's one item.
+          // Let's try 3px blur only for dot as per request.
+
+          ctx.filter = 'blur(3px)'
+
           // DOT uses the original high-res image
           // (p.img is set to loadedImages[0] below, not a thumbnail)
 
@@ -614,18 +656,29 @@ export default function MosaicCanvas({ images }: MosaicCanvasProps) {
 
           ctx.drawImage(p.img, nix, niy, nw, nh)
           ctx.restore()
+
+          ctx.filter = 'none' // Immediately reset
         } else {
           // Standard Tile (Use Thumbnail for Performance)
           // Optimization: Don't draw if opacity ~ 0
           if (opacity > 0.01) {
             // Thumbnails are pre-cropped squares.
             // Just draw whole thing scaling to target w/h
-            ctx.drawImage(p.thumb, x - p.w / 2, y - p.h / 2, p.w, p.h)
+
+            // Use Blurred thumbnail for animation
+            if (p.blurredThumb && p.blurredThumb instanceof HTMLCanvasElement) {
+              ctx.drawImage(p.blurredThumb, x - p.w / 2, y - p.h / 2, p.w, p.h)
+            } else {
+              ctx.drawImage(p.thumb, x - p.w / 2, y - p.h / 2, p.w, p.h)
+            }
           }
         }
 
         ctx.globalAlpha = 1.0
       })
+
+      // Reset filter so it doesn't bleed to next frame items (like text if order changes)
+      // ctx.filter = 'none' // Already handled inside local loops if used
 
       if (elapsed < TOTAL_DURATION) {
         requestAnimationFrame(animate)
@@ -664,15 +717,16 @@ export default function MosaicCanvas({ images }: MosaicCanvasProps) {
 
           // Draw Final Canvas
           ctx.clearRect(0, 0, width, height)
-          ctx.fillStyle = gradient
-          ctx.fillRect(0, 0, width, height)
+          // Background is transparent now
+          // ctx.fillStyle = gradient
+          // ctx.fillRect(0, 0, width, height)
 
           // Full-width Glow Gradient behind text (Final)
           const glowHeight = height * 0.15
           const textGlow = ctx.createLinearGradient(0, 0, 0, glowHeight)
           textGlow.addColorStop(0, 'rgba(216, 180, 254, 0.2)')
           textGlow.addColorStop(1, 'rgba(216, 180, 254, 0)')
-          
+
           ctx.save()
           ctx.fillStyle = textGlow
           ctx.fillRect(0, 0, width, glowHeight)
@@ -680,7 +734,14 @@ export default function MosaicCanvas({ images }: MosaicCanvasProps) {
 
           // Draw Title "HAMNE BANAYA" (Final)
           ctx.save()
-          ctx.font = `600 ${fontSize * 0.15}px Arial, sans-serif`
+          // Ensure variable is fresh or reused correctly
+          const finalFontName =
+            getComputedStyle(document.body)
+              .getPropertyValue('--font-shadows-into-light')
+              .trim() || 'Arial'
+          ctx.font = `600 ${
+            fontSize * 0.15
+          }px ${finalFontName}, "Shadows Into Light", cursive, Arial`
           ctx.fillStyle = 'white'
           ctx.textAlign = 'center'
           ctx.textBaseline = 'top'
@@ -690,9 +751,11 @@ export default function MosaicCanvas({ images }: MosaicCanvasProps) {
           ctx.shadowColor = '#d8b4fe'
           ctx.shadowBlur = fontSize * 0.05
 
-          ctx.fillText('HAMNE BANAYA', width / 2, height * 0.05)
+          ctx.fillText('HUMNE BANAYA', width / 2, height * 0.05)
           ctx.restore()
 
+          // Ensure unblurred for final result
+          ctx.filter = 'none'
           ctx.drawImage(perfectMosaicCanvas, 0, 0)
 
           // Draw Dot (Manually on top)
@@ -925,14 +988,14 @@ export default function MosaicCanvas({ images }: MosaicCanvasProps) {
           overflow: 'hidden',
           boxShadow: '0 0 50px rgba(0,0,0,0.5)',
           cursor: 'crosshair',
-          background: '#041d40', // Match canvas edge (Solid)
+          // background: '#041d40', // Match canvas edge (Solid)
           width: '100%',
           height: '100%', // Maximizing height
           display: 'flex',
           justifyContent: 'center',
           alignItems: 'center',
         }}
-        className='relative w-full min-h-screen'
+        className='relative w-full min-h-screen bg-[radial-gradient(ellipse_at_center,_#182398_0%,_#001476_40%,_#000D4C_75%)]'
       >
         <canvas
           ref={canvasRef}
@@ -1019,9 +1082,9 @@ export default function MosaicCanvas({ images }: MosaicCanvasProps) {
                 opacity: isExpanded ? 1 : 0,
                 transform: isExpanded ? 'scale(1)' : 'scale(0.5)',
                 transformOrigin: 'top center',
-                transition: isExpanded 
+                transition: isExpanded
                   ? 'opacity 0.6s 0.4s, transform 0.6s 0.4s' // Enter: Delay
-                  : 'opacity 0.3s, transform 0.3s',          // Exit: Fast
+                  : 'opacity 0.3s, transform 0.3s', // Exit: Fast
                 boxShadow: isExpanded ? '0 10px 30px rgba(0,0,0,0.5)' : 'none',
               }}
             >
@@ -1035,7 +1098,7 @@ export default function MosaicCanvas({ images }: MosaicCanvasProps) {
                   whiteSpace: 'nowrap',
                 }}
               >
-                Featured Selfie
+                #mainebanayajio
               </span>
             </div>
           </div>
