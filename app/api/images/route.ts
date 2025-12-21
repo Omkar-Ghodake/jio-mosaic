@@ -8,7 +8,8 @@ export async function GET() {
   try {
     await dbConnect()
 
-    const images = await Image.find().lean()
+    // Only fetch approved (active) images
+    const images = await Image.find({ status: 'approved' }).lean()
 
     return NextResponse.json(images, { status: 200 })
   } catch (error) {

@@ -11,37 +11,44 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-export async function POST() {
+export async function POST(req: Request) {
   try {
+    const { mode } = await req.json().catch(() => ({ mode: 'SOFT' })) // Default to SOFT if no body
     await dbConnect();
 
-    // 1. Fetch all images to get publicIds
-    const images = await Image.find({});
-
-    // 2. Delete from Cloudinary
-    const deletePromises = images.map((img) => {
-      return new Promise((resolve) => {
-        cloudinary.uploader.destroy(img.publicId, (error, result) => {
-          if (error) console.error(`Failed to delete ${img.publicId}:`, error);
-          resolve(result);
+    // HARD RESET (Destructive)
+    if (mode === 'HARD') {
+        const images = await Image.find({});
+        // Cloudinary Delete
+        const deletePromises = images.map((img) => {
+        return new Promise((resolve) => {
+            cloudinary.uploader.destroy(img.publicId, (error, result) => {
+            if (error) console.error(`Failed to delete ${img.publicId}:`, error);
+            resolve(result);
+            });
         });
-      });
-    });
-    
-    // Wait for all cloud deletes (don't fail the request if one fails, just log)
-    await Promise.all(deletePromises);
+        });
+        await Promise.all(deletePromises);
+        
+        // Mongo Delete
+        await Image.deleteMany({});
+    } else {
+        // SOFT RESET (Safe)
+        // Mark active images as archived
+        await Image.updateMany(
+            { status: 'approved' },
+            { $set: { status: 'archived' } }
+        )
+    }
 
-    // 3. Delete all from MongoDB
-    await Image.deleteMany({});
-
-    // 4. Reset Settings Mode
+    // Reset System Mode (Common for both)
     await Settings.findOneAndUpdate(
       {},
       { mode: 'UPLOAD' },
       { upsert: true }
     );
 
-    return NextResponse.json({ success: true }, { status: 200 });
+    return NextResponse.json({ success: true, mode }, { status: 200 });
   } catch (error) {
     console.error('Error in POST /api/reset:', error);
     return NextResponse.json(

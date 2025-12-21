@@ -219,7 +219,11 @@ export default function DisplayPage() {
   // ─────────────────────────────────────────────
 
   return (
-    <main className={`min-h-screen max-h-screen overflow-hidden text-white relative flex items-center justify-center ${showMosaic ? "bg-[radial-gradient(ellipse_at_center,_#182398_0%,_#001476_40%,_#000D4C_75%)]" : 'bg-[radial-gradient(ellipse_at_center,_#3E0A86_0%,_#1A0761_40%,_#030055_75%)]'}`}>
+    <main className={`min-h-screen max-h-screen overflow-hidden text-white relative flex items-center justify-center ${showMosaic ? "bg-[#16162a]" : 'bg-[#16162a]'}`}>
+      {/* Background Gradients - Lighter & More Vibrant */}
+      <div className='absolute top-0 left-0 w-full h-3/4 bg-purple-600/40 blur-[150px] rounded-full pointer-events-none' />
+      <div className='absolute bottom-0 right-0 w-3/4 h-3/4 bg-indigo-600/40 blur-[130px] rounded-full pointer-events-none' />
+
       {showMosaic ? (
         engine === 'CANVAS' ? (
           <div className='w-full h-full flex items-center justify-center relative'>
@@ -280,57 +284,40 @@ export default function DisplayPage() {
               )
           )}
 
-          <div className='absolute inset-0 bg-white/10 backdrop-blur-lg flex flex-col items-center justify-center text-9xl font-semibold space-y-20'>
-            <h1 style={{ fontFamily: 'var(--font-shadows-into-light)' }}>KISNE BANAYA JIO?</h1>
-            <Image
-              src='/public_qr.png'
-              alt='public_qr'
-              width={350}
-              height={350}
-              className='brightness-0 invert backdrop-blur-lg shadow-xl rounded-4xl p-2 '
-            />
+          <div className='absolute inset-0 bg-black/40 backdrop-blur-sm flex flex-col items-center justify-center text-center space-y-12 z-20'>
+             <div className="relative">
+                <h1 
+                    className='text-7xl md:text-9xl font-bold bg-gradient-to-r from-purple-300 via-pink-300 to-indigo-300 bg-clip-text text-transparent drop-shadow-[0_5px_15px_rgba(255,255,255,0.3)] py-4 leading-relaxed'
+                    style={{ fontFamily: 'var(--font-shadows-into-light)' }}
+                >
+                    KISNE BANAYA JIO?
+                </h1>
+             </div>
+
+            <div className="flex flex-col items-center gap-6">
+                 {/* QR Card - Static Minimalist - No Hover */}
+                <div className="relative bg-white/10 backdrop-blur-2xl rounded-3xl p-0 border border-white/40 shadow-2xl overflow-hidden">
+                     <Image
+                        src='/public_qr.png'
+                        alt='public_qr'
+                        width={350}
+                        height={350}
+                        className='brightness-0 invert opacity-95'
+                     />
+                </div>
+                 <p className="text-xl md:text-2xl font-light tracking-widest text-purple-100/90 drop-shadow-md animate-pulse uppercase">
+                     Scan QR to know
+                 </p>
+            </div>
           </div>
         </div>
       )}
 
       {!showMosaic && (
         <>
-          <div className='fixed bottom-6 right-6 flex flex-col gap-3 z-50'>
-            <div className='bg-neutral-900/80 backdrop-blur-md rounded-xl border border-white/10 flex flex-col gap-2 shadow-2xl'>
-              <div className='flex gap-2'>
-                <button
-                  onClick={() => handleGenerateMosaic('AI')}
-                  className={`px-6 py-3 rounded-lg font-bold text-sm tracking-wide transition-all duration-300 transform hover:scale-105 ${
-                    engine === 'AI'
-                      ? 'bg-linear-to-r from-blue-600 to-indigo-600 text-white shadow-blue-500/30 shadow-lg'
-                      : 'bg-white/5 text-neutral-400 border border-white/10 hover:bg-white/10 hover:text-white'
-                  }`}
-                >
-                  Create
-                </button>
-              </div>
-            </div>
-          </div>
+            {/* Buttons Removed as requested */}
         </>
       )}
-
-      <button
-        onClick={async () => {
-          try {
-            const res = await fetch('/api/reset', { method: 'POST' })
-            if (res.ok) {
-              setImages([])
-              setMode('UPLOAD')
-              setIsMosaicRunning(false)
-            }
-          } catch (e) {
-            console.error(e)
-          }
-        }}
-        className='fixed bottom-6 left-6 text-neutral-500 hover:text-white font-bold py-3 px-6 z-50 text-sm tracking-wide uppercase'
-      >
-        Reset System
-      </button>
     </main>
   )
 }

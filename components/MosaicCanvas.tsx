@@ -480,15 +480,11 @@ export default function MosaicCanvas({ images }: MosaicCanvasProps) {
 
       // Draw Title "HAMNE BANAYA"
       // Full-width Glow Gradient behind text
-      const glowHeight = height * 0.15
-      const textGlow = ctx.createLinearGradient(0, 0, 0, glowHeight)
-      textGlow.addColorStop(0, 'rgba(216, 180, 254, 0.2)') // Top edge light
-      textGlow.addColorStop(1, 'rgba(216, 180, 254, 0)') // Fade out
-
-      ctx.save()
-      ctx.fillStyle = textGlow
-      ctx.fillRect(0, 0, width, glowHeight)
-      ctx.restore()
+      // Glow Gradient Box REMOVED
+      // ctx.save()
+      // ctx.fillStyle = textGlow
+      // ctx.fillRect(0, 0, width, glowHeight)
+      // ctx.restore()
 
       // Draw Title "HAMNE BANAYA"
       ctx.save()
@@ -509,7 +505,7 @@ export default function MosaicCanvas({ images }: MosaicCanvasProps) {
         getComputedStyle(document.body)
           .getPropertyValue('--font-shadows-into-light')
           .trim() || 'Arial'
-      ctx.font = `600 ${
+      ctx.font = `900 ${
         fontSize * 0.15
       }px ${fontName}, "Shadows Into Light", cursive, Arial`
       ctx.fillStyle = `rgba(255, 255, 255, ${titleOpacity})`
@@ -517,9 +513,17 @@ export default function MosaicCanvas({ images }: MosaicCanvasProps) {
       ctx.textBaseline = 'top'
       ctx.letterSpacing = '0.2em'
 
+      // Gradient Fill for Text (Jio Blue Theme)
+      const textGradient = ctx.createLinearGradient(width/2 - width*0.2, 0, width/2 + width*0.2, 0)
+      textGradient.addColorStop(0, '#6366f1') // Indigo-500
+      textGradient.addColorStop(0.5, '#a5b4fc') // Indigo-300
+      textGradient.addColorStop(1, '#818cf8') // Indigo-400
+      
+      ctx.fillStyle = textGradient
+
       // Keep subtle shadow for legibility
-      ctx.shadowColor = `rgba(216, 180, 254, ${titleOpacity})`
-      ctx.shadowBlur = fontSize * 0.05
+      // ctx.shadowColor = ... // REMOVED
+      // ctx.shadowBlur = ...  // REMOVED
 
       ctx.fillText('HUMNE BANAYA', width / 2, height * 0.05 + titleYOffset)
       ctx.restore()
@@ -534,8 +538,6 @@ export default function MosaicCanvas({ images }: MosaicCanvasProps) {
       // Usually better to mask ONLY the final state.
       // BUT, if they are "mosaic particles", they are usually just square tiles.
       // Let's draw them raw.
-
-      let completed = false
 
       // Loop through all particles
       // Optimization: Iterate only relevant groups based on time?
@@ -722,34 +724,36 @@ export default function MosaicCanvas({ images }: MosaicCanvasProps) {
           // ctx.fillRect(0, 0, width, height)
 
           // Full-width Glow Gradient behind text (Final)
-          const glowHeight = height * 0.15
-          const textGlow = ctx.createLinearGradient(0, 0, 0, glowHeight)
-          textGlow.addColorStop(0, 'rgba(216, 180, 254, 0.2)')
-          textGlow.addColorStop(1, 'rgba(216, 180, 254, 0)')
+          // Final Glow Gradient Box REMOVED
+          // ctx.fillStyle = textGlow
+          // ctx.fillRect(...)
 
-          ctx.save()
-          ctx.fillStyle = textGlow
-          ctx.fillRect(0, 0, width, glowHeight)
-          ctx.restore()
-
-          // Draw Title "HAMNE BANAYA" (Final)
+          // Draw Title "HMNE BANAYA" (Final)
           ctx.save()
           // Ensure variable is fresh or reused correctly
           const finalFontName =
             getComputedStyle(document.body)
               .getPropertyValue('--font-shadows-into-light')
               .trim() || 'Arial'
-          ctx.font = `600 ${
+          ctx.font = `900 ${
             fontSize * 0.15
           }px ${finalFontName}, "Shadows Into Light", cursive, Arial`
-          ctx.fillStyle = 'white'
+          
+          // Gradient Fill (Final)
+          const finalTextGradient = ctx.createLinearGradient(width/2 - width*0.2, 0, width/2 + width*0.2, 0)
+          finalTextGradient.addColorStop(0, '#6366f1')
+          finalTextGradient.addColorStop(0.5, '#a5b4fc') 
+          finalTextGradient.addColorStop(1, '#818cf8')
+          ctx.fillStyle = finalTextGradient
+
           ctx.textAlign = 'center'
           ctx.textBaseline = 'top'
           ctx.letterSpacing = '0.2em'
 
           // Glow Effect
-          ctx.shadowColor = '#d8b4fe'
-          ctx.shadowBlur = fontSize * 0.05
+          // Glow Effect REMOVED
+          // ctx.shadowColor = ... 
+          // ctx.shadowBlur = ...
 
           ctx.fillText('HUMNE BANAYA', width / 2, height * 0.05)
           ctx.restore()
@@ -988,15 +992,19 @@ export default function MosaicCanvas({ images }: MosaicCanvasProps) {
           overflow: 'hidden',
           boxShadow: '0 0 50px rgba(0,0,0,0.5)',
           cursor: 'crosshair',
-          // background: '#041d40', // Match canvas edge (Solid)
+          // background: '#041d40', // REMOVED
           width: '100%',
           height: '100%', // Maximizing height
           display: 'flex',
           justifyContent: 'center',
           alignItems: 'center',
         }}
-        className='relative w-full min-h-screen bg-[radial-gradient(ellipse_at_center,_#182398_0%,_#001476_40%,_#000D4C_75%)]'
+        className='relative w-full min-h-screen bg-[#020617] overflow-hidden'
       >
+        {/* Background Gradients - Jio Blue Theme */}
+        <div className='absolute top-0 left-0 w-full h-3/4 bg-blue-600/20 blur-[150px] rounded-full pointer-events-none' />
+        <div className='absolute bottom-0 right-0 w-3/4 h-3/4 bg-sky-600/20 blur-[130px] rounded-full pointer-events-none' />
+
         <canvas
           ref={canvasRef}
           onMouseMove={handleMouseMove}
@@ -1009,7 +1017,7 @@ export default function MosaicCanvas({ images }: MosaicCanvasProps) {
             objectFit: 'contain',
             display: 'block',
           }}
-          className='w-full h-full object-contain'
+          className='w-full h-full object-contain relative z-10'
         />
 
         {/* Hover Popup (Follows Cursor) */}
@@ -1083,7 +1091,7 @@ export default function MosaicCanvas({ images }: MosaicCanvasProps) {
                 transform: isExpanded ? 'scale(1)' : 'scale(0.5)',
                 transformOrigin: 'top center',
                 transition: isExpanded
-                  ? 'opacity 0.6s 0.4s, transform 0.6s 0.4s' // Enter: Delay
+                  ? 'opacity 0.6s, transform 0.6s' // Enter: Sync with image
                   : 'opacity 0.3s, transform 0.3s', // Exit: Fast
                 boxShadow: isExpanded ? '0 10px 30px rgba(0,0,0,0.5)' : 'none',
               }}
@@ -1106,30 +1114,19 @@ export default function MosaicCanvas({ images }: MosaicCanvasProps) {
         {downloadUrl && (
           <a
             href={downloadUrl}
-            download='jio-mosaic.png'
             style={{
               position: 'absolute',
               bottom: '30px',
               right: '30px', // Moved to bottom right
               zIndex: 2000, // Ensure on top of everything
-              background: 'linear-gradient(45deg, #0070f3, #030b0cff)', // Consistent Blue Theme
-              color: 'white',
-              padding: '16px', // Circular padding
-              borderRadius: '50%', // Circle
-              textDecoration: 'none',
-              fontSize: '1rem',
-              fontWeight: 'bold',
-              boxShadow: '0 4px 15px rgba(0,0,0,0.5)',
-              transform: 'translateZ(0)', // Force GPU render layer
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              width: '60px',
-              height: '60px',
+              width: 'auto',
+              height: 'auto',
             }}
-            className='hover:scale-105 transition-transform active:scale-95 text'
+            className='group bg-white/10 backdrop-blur-md border border-white/20 text-white p-3 rounded-full font-semibold shadow-lg hover:bg-white/20 transition-all flex items-center gap-3'
             title='Download Mosaic'
+            download='jio-mosaic.png'
           >
+            {/* <span className="text-sm tracking-wide">Download</span> */}
             <svg
               width='24'
               height='24'
