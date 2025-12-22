@@ -10,7 +10,7 @@ interface ImageData {
   isPresident: boolean
 }
 
-const Controls = () => {
+const Controls = ({ onLogout }: { onLogout: () => void }) => {
   const [totalImages, setTotalImages] = useState<number>(0)
   const [presidentImages, setPresidentImages] = useState<ImageData[]>([])
   const [showPresidentModal, setShowPresidentModal] = useState(false)
@@ -134,10 +134,17 @@ const Controls = () => {
       <div className="w-full max-w-lg flex flex-col gap-6">
 
       {/* ─── HEADER ─── */}
-      <div className='text-center py-4 border-b-2 border-green-800 border-dashed shrink-0'>
-        <h1 className='text-2xl font-bold tracking-tighter animate-pulse'>
+      {/* ─── HEADER ─── */}
+      <div className='flex flex-col md:flex-row items-center justify-between gap-4 py-6 border-b-2 border-green-800 border-dashed shrink-0'>
+        <h1 className='text-xl md:text-2xl font-bold tracking-tighter animate-pulse text-center md:text-left'>
           {'>'} SYSTEM_CONTROL_PANEL_V2.0 <span className='animate-ping inline-block w-2 h-2 rounded-full bg-green-500 ml-2' />
         </h1>
+        <button 
+            onClick={onLogout}
+            className='px-4 py-2 border border-red-900 text-red-600 hover:bg-red-900/20 hover:text-red-500 text-xs font-bold tracking-widest uppercase transition-all whitespace-nowrap'
+        >
+            [ LOGOUT ]
+        </button>
       </div>
 
       {/* ─── MONITORING SECTION ─── */}
@@ -265,6 +272,31 @@ const Controls = () => {
             <div className="mt-8 text-center text-green-700 text-xs animate-pulse">
                 _AWAITING_FURTHER_INPUT_
             </div>
+
+            <button
+                onClick={() => {
+                    showConfirm(
+                        'ARCHIVE_VIP_ENTRY?',
+                        'This will remove the President image from direct display but keep it in the database records.',
+                        'red',
+                        async () => {
+                            try {
+                                await axios.patch(`/api/images/${presidentImages[0]._id}`, { action: 'archive' })
+                                setPresidentImages([])
+                                setShowPresidentModal(false)
+                                fetchStats() // Refresh counts
+                                showAlert('ARCHIVE_SUCCESSFUL', 'VIP Entry archived successfully.', 'green')
+                            } catch (error) {
+                                console.error('Archive failed:', error)
+                                showAlert('ARCHIVE_FAILURE', 'Failed to archive entry.', 'red')
+                            }
+                        }
+                    )
+                }}
+                className="mt-6 px-6 py-2 border border-red-900 text-red-600 hover:bg-red-900/20 hover:text-red-500 text-xs font-bold tracking-widest uppercase transition-all"
+            >
+                [ ARCHIVE_ENTRY ]
+            </button>
         </div>
       )}
     </div>

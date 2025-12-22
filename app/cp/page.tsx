@@ -33,9 +33,18 @@ const ControlPanel = () => {
     return <Login onLoginSuccess={() => setIsAuthenticated(true)} />
   }
 
+  const handleLogout = async () => {
+    try {
+        await axios.post('/api/auth/logout')
+        setIsAuthenticated(false)
+    } catch (error) {
+        console.error('Logout failed:', error)
+    }
+  }
+
   return (
     <div>
-      <Controls />
+      <Controls onLogout={handleLogout} />
     </div>
   )
 }

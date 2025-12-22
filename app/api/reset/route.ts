@@ -18,19 +18,7 @@ export async function POST(req: Request) {
 
     // HARD RESET (Destructive)
     if (mode === 'HARD') {
-        const images = await Image.find({});
-        // Cloudinary Delete
-        const deletePromises = images.map((img) => {
-        return new Promise((resolve) => {
-            cloudinary.uploader.destroy(img.publicId, (error, result) => {
-            if (error) console.error(`Failed to delete ${img.publicId}:`, error);
-            resolve(result);
-            });
-        });
-        });
-        await Promise.all(deletePromises);
-        
-        // Mongo Delete
+        // Mongo Delete (Only DB, verify Cloudinary images are effectively orphaned)
         await Image.deleteMany({});
     } else {
         // SOFT RESET (Safe)
