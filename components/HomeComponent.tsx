@@ -110,12 +110,13 @@ const HomeComponent = () => {
       <SelfieCamera
         onCapture={handleCapture}
         onCancel={() => setShowCamera(false)}
+        allowBackCamera={!!(isPresident && authId)}
       />
     )
   }
 
   return (
-    <main className='h-screen w-full flex flex-col items-center justify-center bg-[#050505] text-white p-4 relative overflow-hidden'>
+    <main className='h-screen max-h-screen w-full flex flex-col items-center justify-center bg-[#050505] text-white p-6 md:p-10 relative overflow-hidden'>
       {/* Background Gradients */}
       <div className='absolute top-0 left-0 w-full h-1/2 bg-purple-900/20 blur-[120px] rounded-full pointer-events-none' />
       <div className='absolute bottom-0 right-0 w-3/4 h-1/2 bg-indigo-900/10 blur-[100px] rounded-full pointer-events-none' />
@@ -140,7 +141,7 @@ const HomeComponent = () => {
             Jio Mosaic Selfie
           </h1>
           <p className='text-neutral-400 text-sm mb-10 max-w-[80%] leading-relaxed'>
-            Add your smile to the mosaic. Together let's turn this moment into history.
+            Add your smile to the mosaic. Together let's turn this moment into beautiful memories.
           </p>
 
           {uploadStatus === 'success' ? (

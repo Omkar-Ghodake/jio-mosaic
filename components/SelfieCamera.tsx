@@ -8,11 +8,13 @@ import { motion, AnimatePresence } from 'framer-motion'
 interface SelfieCameraProps {
   onCapture: (file: File) => void
   onCancel: () => void
+  allowBackCamera?: boolean
 }
 
 export default function SelfieCamera({
   onCapture,
   onCancel,
+  allowBackCamera = false,
 }: SelfieCameraProps) {
   const videoRef = useRef<HTMLVideoElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -191,21 +193,25 @@ export default function SelfieCamera({
                   </button>
               </div>
 
-              <button
-                onClick={toggleCamera}
-                className='w-12 h-12 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center text-white hover:bg-white/20 transition-all active:scale-95'
-                type='button'
-                aria-label='Switch Camera'
-              >
-                <motion.div
-                    key={facingMode}
-                    initial={{ rotate: 0 }}
-                    animate={{ rotate: 180 }}
-                    transition={{ duration: 0.4 }}
+              {allowBackCamera ? (
+                <button
+                  onClick={toggleCamera}
+                  className='w-12 h-12 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center text-white hover:bg-white/20 transition-all active:scale-95'
+                  type='button'
+                  aria-label='Switch Camera'
                 >
-                    <MdOutlineCameraswitch className="text-2xl" />
-                </motion.div>
-              </button>
+                  <motion.div
+                      key={facingMode}
+                      initial={{ rotate: 0 }}
+                      animate={{ rotate: 180 }}
+                      transition={{ duration: 0.4 }}
+                  >
+                      <MdOutlineCameraswitch className="text-2xl" />
+                  </motion.div>
+                </button>
+              ) : (
+                <div className='w-12 h-12' /> /* Placeholder for spacing */
+              )}
             </div>
             </div>
           </>

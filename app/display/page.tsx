@@ -219,14 +219,18 @@ export default function DisplayPage() {
   // ─────────────────────────────────────────────
 
   return (
-    <main className={`min-h-screen max-h-screen overflow-hidden text-white relative flex items-center justify-center ${showMosaic ? "bg-[#16162a]" : 'bg-[#16162a]'}`}>
+    <main
+      className={`h-screen max-h-screen overflow-hidden text-white relative flex items-center justify-center ${
+        showMosaic ? 'bg-[#16162a]' : 'bg-[#16162a]'
+      }`}
+    >
       {/* Background Gradients - Lighter & More Vibrant */}
       <div className='absolute top-0 left-0 w-full h-3/4 bg-purple-600/40 blur-[150px] rounded-full pointer-events-none' />
       <div className='absolute bottom-0 right-0 w-3/4 h-3/4 bg-indigo-600/40 blur-[130px] rounded-full pointer-events-none' />
 
       {showMosaic ? (
         engine === 'CANVAS' ? (
-          <div className='w-full h-full flex items-center justify-center relative'>
+          <div className='w-full flex-1 flex items-center justify-center relative'>
             <div
               ref={canvasContainerRef}
               className='w-full h-full flex items-center justify-center'
@@ -243,9 +247,10 @@ export default function DisplayPage() {
           <MosaicCanvas images={images} />
         )
       ) : (
-        <div className='relative w-full h-screen'>
+        <div className='relative w-full h-full'>
           {images.map(
-            (img) => motionMap[img._id] && (
+            (img) =>
+              motionMap[img._id] && (
                 <motion.div
                   key={img._id}
                   className='absolute'
@@ -282,40 +287,35 @@ export default function DisplayPage() {
               )
           )}
 
-          <div className='absolute inset-0 bg-black/40 backdrop-blur-sm flex flex-col items-center justify-center text-center space-y-12 z-20'>
-             <div className="relative">
-                <h1 
-                    className='text-7xl md:text-9xl font-bold bg-gradient-to-r from-purple-300 via-pink-300 to-indigo-300 bg-clip-text text-transparent drop-shadow-[0_5px_15px_rgba(255,255,255,0.3)] py-4 leading-relaxed'
-                    style={{ fontFamily: 'var(--font-shadows-into-light)' }}
-                >
-                    KISNE BANAYA JIO?
-                </h1>
-             </div>
+          <div className='absolute inset-0 bg-black/40 backdrop-blur-sm flex flex-col items-center justify-center text-center z-20 space-y-4 md:space-y-6'>
+            <div className='relative'>
+              <h1
+                className='text-7xl md:text-[10.5rem] font-bold bg-gradient-to-r from-purple-300 via-pink-300 to-indigo-300 bg-clip-text text-transparent py-4 drop-shadow-[0_5px_15px_rgba(255,255,255,0.3)]'
+                style={{ fontFamily: 'var(--font-shadows-into-light)' }}
+              >
+                KISNE BANAYA JIO?
+              </h1>
+            </div>
 
-            <div className="flex flex-col items-center gap-6">
-                 {/* QR Card - Static Minimalist - No Hover */}
-                <div className="relative bg-white/10 backdrop-blur-2xl rounded-3xl p-0 border border-white/40 shadow-2xl overflow-hidden">
-                     <Image
-                        src='/public_qr.png'
-                        alt='public_qr'
-                        width={350}
-                        height={350}
-                        className='brightness-0 invert opacity-95'
-                     />
-                </div>
-                 <p className="text-xl md:text-2xl font-light tracking-widest text-purple-100/90 drop-shadow-md animate-pulse uppercase">
-                     Scan QR to know
-                 </p>
+            <div className='flex flex-col items-center gap-2 md:gap-4'>
+              {/* QR Card - Static Minimalist - No Hover */}
+              <div className='relative bg-white/10 backdrop-blur-2xl rounded-3xl p-0 border border-white/40 shadow-2xl overflow-hidden w-[300px] h-[300px] md:w-[600px] md:h-[600px]'>
+                <Image
+                  src='/public_qr.png'
+                  alt='public_qr'
+                  fill
+                  className='brightness-0 invert opacity-95 object-contain'
+                />
+              </div>
+              <p className='text-xl md:text-3xl font-light tracking-widest text-purple-100/90 drop-shadow-md animate-pulse uppercase'>
+                Scan QR to know
+              </p>
             </div>
           </div>
         </div>
       )}
 
-      {!showMosaic && (
-        <>
-            {/* Buttons Removed as requested */}
-        </>
-      )}
+      {!showMosaic && <>{/* Buttons Removed as requested */}</>}
     </main>
   )
 }
