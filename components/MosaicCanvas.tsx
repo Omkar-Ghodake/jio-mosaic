@@ -185,8 +185,8 @@ export default function MosaicCanvas({ images }: MosaicCanvasProps) {
     // Target: 95% of width or height
     // Target: 95% of width or height
     // Target: 95% of width or height
-    const targetWidth = width * 0.95
-    const targetHeight = height * 0.95 // Reduced to leave room for button at bottom
+    const targetWidth = width * 0.85
+    const targetHeight = height * 0.85 // Reduced to leave room for button at bottom
 
     // Approx adjustment
     if (metrics.totalW > targetWidth) {
@@ -225,7 +225,7 @@ export default function MosaicCanvas({ images }: MosaicCanvasProps) {
     const { totalW, j, i, o, gap: textGap } = metrics
 
     const startX = (width - totalW) / 2
-    const centerY = height * 0.7 // Shifted down further for gap
+    const centerY = height * 0.6 // Shifted up to reduce gap with title
 
     let cursorX = startX
 
@@ -512,7 +512,7 @@ export default function MosaicCanvas({ images }: MosaicCanvasProps) {
           .getPropertyValue('--font-shadows-into-light')
           .trim() || 'Arial'
       ctx.font = `900 ${
-        fontSize * 0.15
+        fontSize * 0.12
       }px ${fontName}, "Shadows Into Light", cursive, Arial`
       ctx.fillStyle = `rgba(255, 255, 255, ${titleOpacity})`
       ctx.textAlign = 'center'
@@ -526,11 +526,11 @@ export default function MosaicCanvas({ images }: MosaicCanvasProps) {
       textGradient.addColorStop(1, '#818cf8') // Indigo-400
       
       ctx.fillStyle = textGradient
-
-      // Keep subtle shadow for legibility
-      // ctx.shadowColor = ... // REMOVED
-      // ctx.shadowBlur = ...  // REMOVED
-
+      
+      // Simulate Bold using Stroke
+      ctx.strokeStyle = textGradient
+      ctx.lineWidth = fontSize * 0.006 // Adjust thickness as needed
+      ctx.strokeText('HUMNE BANAYA', width / 2, height * 0.05 + titleYOffset)
       ctx.fillText('HUMNE BANAYA', width / 2, height * 0.05 + titleYOffset)
       ctx.restore()
 
@@ -742,7 +742,7 @@ export default function MosaicCanvas({ images }: MosaicCanvasProps) {
               .getPropertyValue('--font-shadows-into-light')
               .trim() || 'Arial'
           ctx.font = `900 ${
-            fontSize * 0.15
+            fontSize * 0.12
           }px ${finalFontName}, "Shadows Into Light", cursive, Arial`
           
           // Gradient Fill (Final)
@@ -756,11 +756,10 @@ export default function MosaicCanvas({ images }: MosaicCanvasProps) {
           ctx.textBaseline = 'top'
           ctx.letterSpacing = '0.2em'
 
-          // Glow Effect
-          // Glow Effect REMOVED
-          // ctx.shadowColor = ... 
-          // ctx.shadowBlur = ...
-
+          // Simulate Bold using Stroke (Final)
+          ctx.strokeStyle = finalTextGradient
+          ctx.lineWidth = fontSize * 0.006
+          ctx.strokeText('HUMNE BANAYA', width / 2, height * 0.05)
           ctx.fillText('HUMNE BANAYA', width / 2, height * 0.05)
           ctx.restore()
 

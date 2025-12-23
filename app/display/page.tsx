@@ -49,11 +49,16 @@ export default function DisplayPage() {
   // Stable animation data (state, strict-mode safe)
   const [motionMap, setMotionMap] = useState<Record<string, MotionData>>({})
 
+  const qrImgPath =
+    `/${process.env.NEXT_PUBLIC_PUBLIC_QR}.png` || '/display-qr-netlify.png'
+
   // ─────────────────────────────────────────────
   // Poll Settings
   // ─────────────────────────────────────────────
 
   useEffect(() => {
+    console.log('image path:')
+
     const fetchSettings = async () => {
       try {
         const res = await fetch('/api/settings')
@@ -85,7 +90,7 @@ export default function DisplayPage() {
         const res = await fetch('/api/images')
         if (res.ok) {
           const data: UploadImage[] = await res.json()
-          console.log('data:', data)
+          // console.log('data:', data)
           setImages(data)
         }
       } catch (error) {
@@ -301,7 +306,7 @@ export default function DisplayPage() {
               {/* QR Card - Static Minimalist - No Hover */}
               <div className='relative bg-white/10 backdrop-blur-2xl rounded-3xl p-0 border border-white/40 shadow-2xl overflow-hidden w-[300px] h-[300px] md:w-[600px] md:h-[600px]'>
                 <Image
-                  src='/public_qr.png'
+                  src={qrImgPath}
                   alt='public_qr'
                   fill
                   className='brightness-0 invert opacity-95 object-contain'

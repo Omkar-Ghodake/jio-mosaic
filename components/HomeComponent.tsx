@@ -116,7 +116,7 @@ const HomeComponent = () => {
   }
 
   return (
-    <main className='h-screen max-h-screen w-full flex flex-col items-center justify-center bg-[#050505] text-white p-6 md:p-10 relative overflow-hidden'>
+    <main className={`h-screen max-h-screen w-full flex flex-col items-center ${uploadStatus === 'success' ? 'justify-start' : 'justify-center'} bg-[#050505] text-white p-6 md:p-10 relative overflow-hidden`}>
       {/* Background Gradients */}
       <div className='absolute top-0 left-0 w-full h-1/2 bg-purple-900/20 blur-[120px] rounded-full pointer-events-none' />
       <div className='absolute bottom-0 right-0 w-3/4 h-1/2 bg-indigo-900/10 blur-[100px] rounded-full pointer-events-none' />
@@ -127,8 +127,9 @@ const HomeComponent = () => {
         transition={{ duration: 0.6 }}
         className='w-full max-w-sm relative z-10'
       >
-        <div className='flex flex-col items-center text-center'>
-            <motion.div
+        <div className={`flex flex-col items-center text-center`}>
+            <div className="flex items-center gap-2">
+              <motion.div
                 initial={{ transform: "scale(0.8)", opacity: 0 }}
                 animate={{ transform: "scale(1)", opacity: 1 }}
                 transition={{ duration: 0.5, delay: 0.2 }}
@@ -140,7 +141,9 @@ const HomeComponent = () => {
           <h1 className='text-3xl font-extrabold mb-3 bg-gradient-to-r from-purple-400 via-pink-400 to-indigo-400 bg-clip-text text-transparent drop-shadow-sm'>
             Jio Mosaic Selfie
           </h1>
-          <p className='text-neutral-400 text-sm mb-10 max-w-[80%] leading-relaxed'>
+            </div>
+
+          <p className='text-neutral-400 text-sm mb-5 leading-relaxed'>
             Add your smile to the mosaic. Together let's turn this moment into beautiful memories.
           </p>
 
@@ -207,7 +210,7 @@ const HomeComponent = () => {
                     animate={{ opacity: 1, y: 0 }}
                     className='flex flex-col gap-4'
                 >
-                  <div className='aspect-[3/4] w-full bg-neutral-900 rounded-3xl overflow-hidden shadow-2xl relative border border-white/10'>
+                  <div className='h-[55vh] w-auto aspect-[3/4] mx-auto bg-neutral-900 rounded-3xl overflow-hidden shadow-2xl relative border border-white/10'>
                     <img
                       src={previewUrl!}
                       alt='Preview'
