@@ -2,9 +2,10 @@
 
 import MosaicCanvas from '@/components/MosaicCanvas'
 import { generateCanvasMosaic } from '@/lib/canvasMosaicEngine'
-import { motion } from 'framer-motion'
+import { AnimatePresence, motion } from 'framer-motion'
 import Image from 'next/image'
 import { useEffect, useRef, useState } from 'react'
+import { FiX } from 'react-icons/fi'
 
 // ─────────────────────────────────────────────
 // Types
@@ -39,6 +40,7 @@ export default function DisplayPage() {
   const [mode, setMode] = useState<SettingsMode>('UPLOAD')
   const [engine, setEngine] = useState<MosaicEngine>('AI')
   const [images, setImages] = useState<UploadImage[]>([])
+  const [showQR, setShowQR] = useState(true)
 
   const canvasContainerRef = useRef<HTMLDivElement>(null)
   const canvasControllerRef = useRef<CanvasController | null>(null)
@@ -292,31 +294,90 @@ export default function DisplayPage() {
               )
           )}
 
-          <div className='absolute inset-0 bg-black/40 backdrop-blur-sm flex flex-col items-center justify-center text-center z-20 space-y-4 md:space-y-6'>
-            <div className='relative'>
+          <div className='absolute inset-0 flex flex-col items-center justify-center text-center z-20 space-y-4 md:space-y-6'>
+            <motion.div layout className='relative'>
               <h1
                 className='text-7xl md:text-[10.5rem] font-bold bg-gradient-to-r from-purple-300 via-pink-300 to-indigo-300 bg-clip-text text-transparent py-4 drop-shadow-[0_5px_15px_rgba(255,255,255,0.3)]'
                 style={{ fontFamily: 'var(--font-shadows-into-light)' }}
               >
                 KISNE BANAYA JIO?
               </h1>
-            </div>
+            </motion.div>
 
-            <div className='flex flex-col items-center gap-2 md:gap-4'>
-              {/* QR Card - Static Minimalist - No Hover */}
-              <div className='relative bg-white/10 backdrop-blur-2xl rounded-3xl p-0 border border-white/40 shadow-2xl overflow-hidden w-[300px] h-[300px] md:w-[600px] md:h-[600px]'>
-                <Image
-                  src={qrImgPath}
-                  alt='public_qr'
-                  fill
-                  className='brightness-0 invert opacity-95 object-contain'
-                />
-              </div>
-              <p className='text-xl md:text-3xl font-light tracking-widest text-purple-100/90 drop-shadow-md animate-pulse uppercase'>
-                Scan QR to know
-              </p>
-            </div>
+            <AnimatePresence>
+              {showQR && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.9, height: 'auto', }}
+                  animate={{ opacity: 1, scale: 1, height: 'auto', }}
+                  exit={{ opacity: 0, scale: 0.5, height: 0, marginTop: 0 }}
+                  transition={{ duration: 0.4, ease: "backOut" }}
+                  className='flex flex-col items-center gap-2 md:gap-4 overflow-hidden'
+                >
+                  {/* QR Card - Static Minimalist - No Hover */}
+                  <motion.div
+                    layoutId='qr-code-morphed'
+                    className='relative bg-white/10 backdrop-blur-2xl rounded-3xl p-0 border border-white/40 shadow-2xl overflow-hidden w-[300px] h-[300px] md:w-[600px] md:h-[600px] cursor-pointer'
+                    onClick={() => setShowQR(false)}
+                  >
+                    <Image
+                      src={qrImgPath}
+                      alt='public_qr'
+                      fill
+                      className='brightness-0 invert opacity-95 object-contain'
+                    />
+                  </motion.div>
+                  <motion.p 
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ delay: 0.1 }}
+                    className='text-xl md:text-3xl font-light tracking-widest text-purple-100/90 drop-shadow-md animate-pulse uppercase'
+                  >
+                    Scan QR to know
+                  </motion.p>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
+
+          {/* Toggle Button (Floating Bottom Right) */}
+          <motion.div
+            className='absolute bottom-10 right-10 z-50'
+            initial={false}
+            animate={{ scale: 1 }}
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.95 }}
+          >
+            <button
+              onClick={() => setShowQR(!showQR)}
+              className='relative w-16 h-16 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 shadow-xl overflow-hidden flex items-center justify-center group'
+            >
+              <AnimatePresence mode='wait'>
+                {showQR ? (
+                  <motion.div
+                    key='close-icon'
+                    initial={{ opacity: 0, rotate: -90 }}
+                    animate={{ opacity: 1, rotate: 0 }}
+                    exit={{ opacity: 0, rotate: 90 }}
+                  >
+                    <FiX className='text-3xl text-white' />
+                  </motion.div>
+                ) : (
+                  <motion.div
+                    layoutId='qr-code-morphed' // Morph target
+                    className='w-full h-full relative p-1.5'
+                  >
+                     <Image
+                      src={qrImgPath}
+                      alt='public_qr_mini'
+                      fill
+                      className='brightness-0 invert opacity-95 object-contain'
+                    />
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </button>
+          </motion.div>
         </div>
       )}
 

@@ -192,7 +192,7 @@ const HomeComponent = () => {
                     onClick={() => setShowCamera(true)}
                     className='group relative bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold py-5 px-8 rounded-full w-full text-lg shadow-xl shadow-purple-500/20 overflow-hidden transition-all'
                   >
-                     <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out" />
+                     <div className="absolute inset-0 bg-white translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out" />
                      <span className="relative flex items-center justify-center gap-2">
                         <FiCamera className="text-xl" />
                         Open Camera
