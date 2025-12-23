@@ -245,9 +245,7 @@ export default function DisplayPage() {
       ) : (
         <div className='relative w-full h-screen'>
           {images.map(
-            (img) =>
-              !img.isPresident &&
-              motionMap[img._id] && (
+            (img) => motionMap[img._id] && (
                 <motion.div
                   key={img._id}
                   className='absolute'

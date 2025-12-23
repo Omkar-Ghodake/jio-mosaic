@@ -8,8 +8,10 @@ export async function GET() {
   try {
     await dbConnect()
 
-    // Only fetch approved (active) images
-    const images = await Image.find({ status: 'approved' }).lean()
+    // Only fetch approved (active) images, sorted by creation date (oldest to newest)
+    const images = await Image.find({ status: 'approved' })
+      .sort({ createdAt: 1 })
+      .lean()
 
     return NextResponse.json(images, { status: 200 })
   } catch (error) {

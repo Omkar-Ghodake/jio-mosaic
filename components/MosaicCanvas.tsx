@@ -255,7 +255,13 @@ export default function MosaicCanvas({ images }: MosaicCanvasProps) {
     const baseSize = fontSize / 14
 
     // Separate President Images
-    const presidentData = loadedData.find((d) => d.isPresident)
+    // We want the LATEST uploaded president image for the dot.
+    // Since API sorts by createdAt asc, the last one in the list is the latest.
+    const allPresidentData = loadedData.filter((d) => d.isPresident)
+    const presidentData =
+      allPresidentData.length > 0
+        ? allPresidentData[allPresidentData.length - 1]
+        : undefined
     const validCommonData = loadedData.filter((d) => !d.isPresident)
 
     // If no common images (only president?), use president as common too?
@@ -1106,7 +1112,7 @@ export default function MosaicCanvas({ images }: MosaicCanvasProps) {
                   whiteSpace: 'nowrap',
                 }}
               >
-                #mainebanayajio
+                #MaineBanayaJio
               </span>
             </div>
           </div>
