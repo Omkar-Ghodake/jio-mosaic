@@ -1,5 +1,6 @@
 'use client'
 import React, { useEffect, useRef, useState } from 'react'
+import { FiVolume2, FiVolumeX } from 'react-icons/fi'
 
 export interface MosaicImage {
   url: string
@@ -97,6 +98,7 @@ export default function MosaicCanvas({ images }: MosaicCanvasProps) {
   const [activeTile, setActiveTile] = useState<ActiveTile | null>(null)
   const [isExpanded, setIsExpanded] = useState(false)
   const [popupPosition, setPopupPosition] = useState({ x: 0, y: 0 })
+  const [isPlaying, setIsPlaying] = useState(false)
 
   const containerRef = useRef<HTMLDivElement>(null)
 
@@ -214,7 +216,12 @@ export default function MosaicCanvas({ images }: MosaicCanvasProps) {
              // Standard sync logic
              if (isNaN(audio.duration) || elapsed < audio.duration) {
                  audio.currentTime = Math.max(0, elapsed)
-                 audio.play().catch(e => console.error("Final play blocked:", e))
+                 audio.play()
+                    .then(() => setIsPlaying(true))
+                    .catch(e => {
+                        console.error("Final play blocked:", e)
+                        setIsPlaying(false)
+                    })
              }
          }
 
@@ -1064,6 +1071,17 @@ export default function MosaicCanvas({ images }: MosaicCanvasProps) {
     setHoveredImage(null)
   }
 
+  const toggleAudio = () => {
+      if (globalAudio) {
+          if (globalAudio.paused) {
+              globalAudio.play().then(() => setIsPlaying(true)).catch(() => setIsPlaying(false))
+          } else {
+              globalAudio.pause()
+              setIsPlaying(false)
+          }
+      }
+  }
+
   return (
     <div
       style={{
@@ -1238,6 +1256,23 @@ export default function MosaicCanvas({ images }: MosaicCanvasProps) {
             </svg>
           </a>
         )}
+        {/* Manual Audio Button (Always visible when Mosaic is active) */}
+        {true && (
+            <button
+                onClick={toggleAudio}
+                style={{
+                    position: 'absolute',
+                    bottom: '90px', // Placed above the download button (which is at 30px)
+                    right: '30px',
+                    zIndex: 2000,
+                }}
+                className='bg-white/10 backdrop-blur-md border border-white/20 text-white p-3 rounded-full font-semibold shadow-lg hover:bg-white/20 transition-all flex items-center justify-center'
+                title={isPlaying ? "Mute" : "Unmute / Play"}
+            >
+                {isPlaying ? <FiVolume2 size={24} /> : <FiVolumeX size={24} />}
+            </button>
+        )}
+
       </div>
     </div>
   )
