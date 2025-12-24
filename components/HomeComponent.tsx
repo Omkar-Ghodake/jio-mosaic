@@ -116,7 +116,9 @@ const HomeComponent = () => {
   }
 
   return (
-    <main className={`h-screen max-h-screen w-full flex flex-col items-center ${uploadStatus === 'success' ? 'justify-start' : 'justify-center'} bg-[#050505] text-white p-6 md:p-10 relative overflow-hidden`}>
+    <main
+      className={`min-h-[90vh] max-h-[90vh] w-full flex flex-col items-center justify-center bg-[#050505] text-white p-6 md:p-10 relative overflow-hidden`}
+    >
       {/* Background Gradients */}
       <div className='absolute top-0 left-0 w-full h-1/2 bg-purple-900/20 blur-[120px] rounded-full pointer-events-none' />
       <div className='absolute bottom-0 right-0 w-3/4 h-1/2 bg-indigo-900/10 blur-[100px] rounded-full pointer-events-none' />
@@ -128,23 +130,32 @@ const HomeComponent = () => {
         className='w-full max-w-sm relative z-10'
       >
         <div className={`flex flex-col items-center text-center`}>
-            <div className="flex items-center gap-2">
-              <motion.div
-                initial={{ transform: "scale(0.8)", opacity: 0 }}
-                animate={{ transform: "scale(1)", opacity: 1 }}
-                transition={{ duration: 0.5, delay: 0.2 }}
-                className="mb-6 p-4 rounded-full bg-gradient-to-tr from-purple-500/20 to-indigo-500/20 backdrop-blur-sm border border-white/10"
+          <div
+            className={`flex ${
+              capturedFile
+                ? 'flex-row'
+                : uploadStatus === 'success'
+                ? 'flex-col'
+                : 'flex-row'
+            } items-center gap-2`}
+          >
+            <motion.div
+              initial={{ transform: 'scale(0.8)', opacity: 0 }}
+              animate={{ transform: 'scale(1)', opacity: 1 }}
+              transition={{ duration: 0.5, delay: 0.2 }}
+              className='mb-6 p-4 rounded-full bg-linear-to-tr from-purple-500/20 to-indigo-500/20 backdrop-blur-sm border border-white/10'
             >
-                 <FiCamera className="w-8 h-8 text-purple-400" />
+              <FiCamera className='w-8 h-8 text-purple-400' />
             </motion.div>
 
-          <h1 className='text-3xl font-extrabold mb-3 bg-gradient-to-r from-purple-400 via-pink-400 to-indigo-400 bg-clip-text text-transparent drop-shadow-sm'>
-            Jio Mosaic Selfie
-          </h1>
-            </div>
+            <h1 className='text-3xl font-extrabold mb-3 bg-linear-to-r from-purple-400 via-pink-400 to-indigo-400 bg-clip-text text-transparent drop-shadow-sm'>
+              Jio Mosaic Selfie
+            </h1>
+          </div>
 
           <p className='text-neutral-400 text-sm mb-5 leading-relaxed'>
-            Add your smile to the mosaic. Together let's turn this moment into beautiful memories.
+            Add your smile to the mosaic. Together let&apos;s turn this moment
+            into beautiful memories.
           </p>
 
           {uploadStatus === 'success' ? (
@@ -187,28 +198,31 @@ const HomeComponent = () => {
               {!capturedFile ? (
                 <div className='w-full'>
                   <motion.button
-                    whileHover={{ scale: 1.02, boxShadow: "0 20px 25px -5px rgb(124 58 237 / 0.3)" }}
+                    whileHover={{
+                      scale: 1.02,
+                      boxShadow: '0 20px 25px -5px rgb(124 58 237 / 0.3)',
+                    }}
                     whileTap={{ scale: 0.98 }}
                     onClick={() => setShowCamera(true)}
                     className='group relative bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold py-5 px-8 rounded-full w-full text-lg shadow-xl shadow-purple-500/20 overflow-hidden transition-all'
                   >
-                     <div className="absolute inset-0 bg-white translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out" />
-                     <span className="relative flex items-center justify-center gap-2">
-                        <FiCamera className="text-xl" />
-                        Open Camera
-                     </span>
+                    <div className='absolute inset-0 bg-white translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out' />
+                    <span className='relative flex items-center justify-center gap-2'>
+                      <FiCamera className='text-xl' />
+                      Open Camera
+                    </span>
                   </motion.button>
-                  
+
                   <div className='mt-8 flex justify-center gap-2'>
-                        {/* Decorative bubbles or pills if needed, kept simple for now */}
+                    {/* Decorative bubbles or pills if needed, kept simple for now */}
                   </div>
                 </div>
               ) : (
                 // Review & Upload Mode
-                <motion.div 
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className='flex flex-col gap-4'
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className='flex flex-col gap-4'
                 >
                   <div className='h-[55vh] w-auto aspect-[3/4] mx-auto bg-neutral-900 rounded-3xl overflow-hidden shadow-2xl relative border border-white/10'>
                     <img
@@ -232,9 +246,12 @@ const HomeComponent = () => {
                       className='flex-[2] bg-white text-black font-bold py-4 rounded-2xl hover:bg-neutral-200 disabled:opacity-50 transition-colors shadow-lg shadow-white/5 flex items-center justify-center gap-2'
                     >
                       {uploadStatus === 'uploading' ? (
-                          <>Uploading...</>
+                        <>Uploading...</>
                       ) : (
-                          <> <FiUploadCloud /> Upload Selfie </>
+                        <>
+                          {' '}
+                          <FiUploadCloud /> Upload Selfie{' '}
+                        </>
                       )}
                     </button>
                   </div>

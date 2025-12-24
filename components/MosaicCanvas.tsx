@@ -39,6 +39,9 @@ interface ActiveTile {
 
 export default function MosaicCanvas({ images }: MosaicCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
+  const audioRef = useRef<HTMLAudioElement | null>(null) // Audio ref
+  const hasInteractedRef = useRef(false) // Track if user has interacted globally
+  const pendingPlayRef = useRef<(() => void) | null>(null) // Queue for deferred playback
   const placementsRef = useRef<Placement[]>([]) // Store placement data for hit testing
   const [downloadUrl, setDownloadUrl] = useState('')
   const [isGenerating, setIsGenerating] = useState(false)
@@ -123,8 +126,50 @@ export default function MosaicCanvas({ images }: MosaicCanvasProps) {
       }
     }
 
-    loadImages()
+    let isMounted = true
+    loadImages().then(() => {
+        if (!isMounted) return // Prevent generating if unmounted
+    })
+    
+    return () => {
+      isMounted = false
+      // Cleanup audio on unmount or re-run
+      if (audioRef.current) {
+        audioRef.current.pause()
+        audioRef.current = null
+      }
+    }
   }, [images])
+
+  // Global Interaction Listener for Audio Unlock
+  useEffect(() => {
+    const handleInteraction = () => {
+      hasInteractedRef.current = true
+      
+      // Execute any deferred play task
+      if (pendingPlayRef.current) {
+        pendingPlayRef.current()
+        pendingPlayRef.current = null
+      }
+
+      // Cleanup listeners immediately after first interaction
+      ['click', 'touchstart', 'keydown'].forEach(event => 
+        document.removeEventListener(event, handleInteraction)
+      )
+    }
+
+    // Add listeners on mount
+    ['click', 'touchstart', 'keydown'].forEach(event => 
+      document.addEventListener(event, handleInteraction)
+    )
+
+    return () => {
+      // Cleanup on unmount
+      ['click', 'touchstart', 'keydown'].forEach(event => 
+        document.removeEventListener(event, handleInteraction)
+      )
+    }
+  }, [])
 
   const generateMosaic = (
     loadedData: { img: HTMLImageElement; isPresident: boolean }[]
@@ -145,6 +190,45 @@ export default function MosaicCanvas({ images }: MosaicCanvasProps) {
 
     canvas.width = width
     canvas.height = height
+
+    // --- Audio Playback ---
+    try {
+      // 1. Cleanup previous audio instance
+      if (audioRef.current) {
+        audioRef.current.pause()
+        audioRef.current.currentTime = 0
+         audioRef.current = null
+      }
+
+      const audio = new Audio('/jio-mosaic-full-audio.mp3')
+      // Store start time of animation to sync audio later if needed
+      const animStartTime = performance.now()
+      
+      // Define Safe Play Function
+      const playSafe = () => {
+        if (audioRef.current !== audio) return // Ensure we are playing the current instance
+        
+        // Sync if delayed
+        const elapsed = (performance.now() - animStartTime) / 1000
+        if (elapsed < audio.duration) {
+            audio.currentTime = elapsed
+            audio.play().catch(e => console.warn("Audio play blocked (fallback):", e))
+        }
+      }
+
+      audioRef.current = audio
+
+      // Check if unlocked
+      if (hasInteractedRef.current) {
+          playSafe()
+      } else {
+          // Defer playback
+          pendingPlayRef.current = playSafe
+      }
+      audioRef.current = audio
+    } catch (err) {
+      console.error('Audio setup failed:', err)
+    }
 
     // Clear background
     // Clear background with detailed gradient matching app theme

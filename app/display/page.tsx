@@ -295,7 +295,15 @@ export default function DisplayPage() {
           )}
 
           <div className='absolute inset-0 flex flex-col items-center justify-center text-center z-20 space-y-4 md:space-y-6'>
-            <motion.div layout className='relative'>
+            <motion.div 
+              layout 
+              initial={false}
+              animate={{
+                backgroundColor: showQR ? 'rgba(255, 255, 255, 0)' : 'rgba(255, 255, 255, 0.05)',
+                backdropFilter: showQR ? 'blur(0px)' : 'blur(12px)',
+              }}
+              className='relative rounded-[4rem] px-8 py-2 md:px-16 md:py-4 mx-4'
+            >
               <h1
                 className='text-7xl md:text-[10.5rem] font-bold bg-gradient-to-r from-purple-300 via-pink-300 to-indigo-300 bg-clip-text text-transparent py-4 drop-shadow-[0_5px_15px_rgba(255,255,255,0.3)]'
                 style={{ fontFamily: 'var(--font-shadows-into-light)' }}

@@ -132,8 +132,30 @@ export default function SelfieCamera({
       onCancel()
   }
 
+  // Prevent zoom while camera is active
+  useEffect(() => {
+    const handleTouchMove = (e: TouchEvent) => {
+      if (e.touches.length > 1) {
+        e.preventDefault()
+      }
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const handleGestureStart = (e: any) => {
+      e.preventDefault()
+    }
+
+    document.addEventListener('touchmove', handleTouchMove, { passive: false })
+    document.addEventListener('gesturestart', handleGestureStart)
+
+    return () => {
+      document.removeEventListener('touchmove', handleTouchMove)
+      document.removeEventListener('gesturestart', handleGestureStart)
+    }
+  }, [])
+
   return (
-    <div className='fixed inset-0 bg-[#050505] z-50 flex flex-col items-center justify-center pt-0'>
+    <div className='fixed inset-0 bg-[#050505] z-50 flex flex-col items-center justify-center pt-0 touch-none'>
       {/* Hidden Canvas for capture */}
       <canvas ref={canvasRef} className='hidden' />
 
