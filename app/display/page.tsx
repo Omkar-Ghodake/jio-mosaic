@@ -295,11 +295,13 @@ export default function DisplayPage() {
           )}
 
           <div className='absolute inset-0 flex flex-col items-center justify-center text-center z-20 space-y-4 md:space-y-6'>
-            <motion.div 
-              layout 
+            <motion.div
+              layout
               initial={false}
               animate={{
-                backgroundColor: showQR ? 'rgba(255, 255, 255, 0)' : 'rgba(255, 255, 255, 0.05)',
+                backgroundColor: showQR
+                  ? 'rgba(255, 255, 255, 0)'
+                  : 'rgba(0, 0, 0, 0.3)',
                 backdropFilter: showQR ? 'blur(0px)' : 'blur(12px)',
               }}
               className='relative rounded-[4rem] px-8 py-2 md:px-16 md:py-4 mx-4'
@@ -315,10 +317,10 @@ export default function DisplayPage() {
             <AnimatePresence>
               {showQR && (
                 <motion.div
-                  initial={{ opacity: 0, scale: 0.9, height: 'auto', }}
-                  animate={{ opacity: 1, scale: 1, height: 'auto', }}
+                  initial={{ opacity: 0, scale: 0.9, height: 'auto' }}
+                  animate={{ opacity: 1, scale: 1, height: 'auto' }}
                   exit={{ opacity: 0, scale: 0.5, height: 0, marginTop: 0 }}
-                  transition={{ duration: 0.4, ease: "backOut" }}
+                  transition={{ duration: 0.4, ease: 'backOut' }}
                   className='flex flex-col items-center gap-2 md:gap-4 overflow-hidden'
                 >
                   {/* QR Card - Static Minimalist - No Hover */}
@@ -334,7 +336,7 @@ export default function DisplayPage() {
                       className='brightness-0 invert opacity-95 object-contain'
                     />
                   </motion.div>
-                  <motion.p 
+                  <motion.p
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
@@ -375,7 +377,7 @@ export default function DisplayPage() {
                     layoutId='qr-code-morphed' // Morph target
                     className='w-full h-full relative p-1.5'
                   >
-                     <Image
+                    <Image
                       src={qrImgPath}
                       alt='public_qr_mini'
                       fill
