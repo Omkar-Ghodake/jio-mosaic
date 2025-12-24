@@ -171,6 +171,14 @@ export default function MosaicCanvas({ images }: MosaicCanvasProps) {
     }
   }, [])
 
+  // Check if browser already considers user active (e.g. from previous clicks)
+  useEffect(() => {
+    // @ts-ignore - navigator.userActivation is standard but might be missing in strict TS
+    if (typeof navigator !== 'undefined' && navigator.userActivation?.hasBeenActive) {
+      hasInteractedRef.current = true
+    }
+  }, [])
+
   const generateMosaic = (
     loadedData: { img: HTMLImageElement; isPresident: boolean }[]
   ) => {
@@ -218,8 +226,11 @@ export default function MosaicCanvas({ images }: MosaicCanvasProps) {
 
       audioRef.current = audio
 
-      // Check if unlocked
-      if (hasInteractedRef.current) {
+      // Check if unlocked (either by local ref or browser state)
+      // @ts-ignore
+      const browserActive = typeof navigator !== 'undefined' && navigator.userActivation?.hasBeenActive
+      
+      if (hasInteractedRef.current || browserActive) {
           playSafe()
       } else {
           // Defer playback
@@ -228,6 +239,7 @@ export default function MosaicCanvas({ images }: MosaicCanvasProps) {
       audioRef.current = audio
     } catch (err) {
       console.error('Audio setup failed:', err)
+      // Ensure we don't show UI errors, just log
     }
 
     // Clear background
