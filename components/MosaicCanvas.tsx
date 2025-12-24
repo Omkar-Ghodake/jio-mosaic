@@ -37,55 +37,91 @@ interface ActiveTile {
   target: TileRect
 }
 
+// --- Global Audio Singleton (Module Level) ---
+// This ensures we capture the VERY FIRST user interaction to unlock audio
+// even if this component hasn't mounted yet.
+let globalAudio: HTMLAudioElement | null = null
+let isAudioUnlocked = false
+let pendingPlayCallback: (() => void) | null = null
+
+const initGlobalAudio = () => {
+  if (typeof window === 'undefined') return
+  if (globalAudio) return
+
+  globalAudio = new Audio('/jio-mosaic-full-audio.mp3')
+  globalAudio.preload = 'auto'
+
+  const unlock = () => {
+    if (isAudioUnlocked || !globalAudio) return
+    
+    // Attempt silent play-pause to unlock AudioContext
+    globalAudio.play()
+      .then(() => {
+        globalAudio!.pause()
+        globalAudio!.currentTime = 0
+        isAudioUnlocked = true
+        // If the mosaic has already requested playback, honor it now
+        if (pendingPlayCallback) {
+          pendingPlayCallback()
+          pendingPlayCallback = null
+        }
+      })
+      .catch((err) => {
+        console.warn("Audio unlock failed (likely no gesture):", err)
+      })
+
+    // Clean up one-time listeners
+    window.removeEventListener('pointerdown', unlock)
+    window.removeEventListener('keydown', unlock)
+  }
+
+  // Capture generic interactions
+  window.addEventListener('pointerdown', unlock, { once: true, capture: true })
+  window.addEventListener('keydown', unlock, { once: true, capture: true })
+}
+
+// Eagerly initialize on module load (client-side)
+if (typeof window !== 'undefined') {
+  initGlobalAudio()
+}
+
 export default function MosaicCanvas({ images }: MosaicCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
-  const audioRef = useRef<HTMLAudioElement | null>(null) // Audio ref
-  const hasInteractedRef = useRef(false) // Track if user has interacted globally
-  const pendingPlayRef = useRef<(() => void) | null>(null) // Queue for deferred playback
-  const placementsRef = useRef<Placement[]>([]) // Store placement data for hit testing
+  const audioRef = useRef<HTMLAudioElement | null>(null) 
+  const hasInteractedRef = useRef(false)
+  // State & Refs
+  const placementsRef = useRef<Placement[]>([])
   const [downloadUrl, setDownloadUrl] = useState('')
   const [isGenerating, setIsGenerating] = useState(false)
   const [hoveredImage, setHoveredImage] = useState<string | null>(null)
-  const [activeTile, setActiveTile] = useState<ActiveTile | null>(null) // { img, rect, id }
+  const [activeTile, setActiveTile] = useState<ActiveTile | null>(null)
   const [isExpanded, setIsExpanded] = useState(false)
   const [popupPosition, setPopupPosition] = useState({ x: 0, y: 0 })
 
   const containerRef = useRef<HTMLDivElement>(null)
 
-  // Track user interaction to prevent auto-popups while exploring
   const lastInteractionRef = useRef(0)
   const popupCountRef = useRef(0)
 
-  // Calculate screen rect for a tile
   const getTileRect = (p: Placement): TileRect | null => {
     const canvas = canvasRef.current
     if (!canvas) return null
     const rect = canvas.getBoundingClientRect()
     const scaleX = rect.width / canvas.width
     const scaleY = rect.height / canvas.height
-
-    // p.cx, p.cy are centers. p.w, p.h are dimensions.
-    // We need top-left.
-    // But wait, our rectangles are rotated?
-    // For the animation, let's ignore rotation for the start rect to keep it simple and clean.
-    // Or if we want to be precise, we just use the bounding box of the tile.
-
     const w = p.w * scaleX
     const h = p.h * scaleY
     const x = rect.left + p.cx * scaleX - w / 2
     const y = rect.top + p.cy * scaleY - h / 2
-
     return { x, y, w, h }
   }
 
-  // Helper to get source string from placement image (Canvas or Image)
   const getImgSrc = (img: HTMLImageElement | HTMLCanvasElement): string => {
     if (img instanceof HTMLImageElement) return img.src
     return img.toDataURL()
   }
 
   useEffect(() => {
-    console.log('img urls in cav:', images)
     if (!images || images.length === 0) return
 
     setHoveredImage(null)
@@ -101,10 +137,10 @@ export default function MosaicCanvas({ images }: MosaicCanvasProps) {
           isPresident: boolean
         } | null>((resolve, reject) => {
           const img = new Image()
-          img.crossOrigin = 'Anonymous' // Crucial for Cloudinary/CORS
+          img.crossOrigin = 'Anonymous'
           img.src = data.url
           img.onload = () => resolve({ img, isPresident: data.isPresident })
-          img.onerror = () => resolve(null) // Convert error to null to filter later
+          img.onerror = () => resolve(null)
         })
       }
 
@@ -128,12 +164,11 @@ export default function MosaicCanvas({ images }: MosaicCanvasProps) {
 
     let isMounted = true
     loadImages().then(() => {
-        if (!isMounted) return // Prevent generating if unmounted
+        if (!isMounted) return
     })
     
     return () => {
       isMounted = false
-      // Cleanup audio on unmount or re-run
       if (audioRef.current) {
         audioRef.current.pause()
         audioRef.current = null
@@ -141,57 +176,16 @@ export default function MosaicCanvas({ images }: MosaicCanvasProps) {
     }
   }, [images])
 
-  // Global Interaction Listener for Audio Unlock
-  useEffect(() => {
-    const handleInteraction = () => {
-      hasInteractedRef.current = true
-      
-      // Execute any deferred play task
-      if (pendingPlayRef.current) {
-        pendingPlayRef.current()
-        pendingPlayRef.current = null
-      }
-
-      // Cleanup listeners immediately after first interaction
-      ['click', 'touchstart', 'keydown'].forEach(event => 
-        document.removeEventListener(event, handleInteraction)
-      )
-    }
-
-    // Add listeners on mount
-    ['click', 'touchstart', 'keydown'].forEach(event => 
-      document.addEventListener(event, handleInteraction)
-    )
-
-    return () => {
-      // Cleanup on unmount
-      ['click', 'touchstart', 'keydown'].forEach(event => 
-        document.removeEventListener(event, handleInteraction)
-      )
-    }
-  }, [])
-
-  // Check if browser already considers user active (e.g. from previous clicks)
-  useEffect(() => {
-    // @ts-ignore - navigator.userActivation is standard but might be missing in strict TS
-    if (typeof navigator !== 'undefined' && navigator.userActivation?.hasBeenActive) {
-      hasInteractedRef.current = true
-    }
-  }, [])
-
   const generateMosaic = (
     loadedData: { img: HTMLImageElement; isPresident: boolean }[]
   ) => {
     const canvas = canvasRef.current
-    if (!canvas) return // Guard clause
+    if (!canvas) return
     const ctx = canvas.getContext('2d')
     if (!ctx) return
-    const placements: Placement[] = [] // Local array to populate ref
+    const placements: Placement[] = []
 
-    // Dynamic resolution based on viewport for smooth performance
-    // Use devicePixelRatio but cap it at 2 (or 3) to prevent 8K lag on mobile/retina
     const dpr = Math.min(window.devicePixelRatio || 1, 2)
-    // Get actual display size
     const rect = canvas.getBoundingClientRect()
     const width = Math.floor(rect.width * dpr)
     const height = Math.floor(rect.height * dpr)
@@ -199,55 +193,47 @@ export default function MosaicCanvas({ images }: MosaicCanvasProps) {
     canvas.width = width
     canvas.height = height
 
-    // --- Audio Playback ---
+    // --- Audio Playback (Singleton) ---
     try {
-      // 1. Cleanup previous audio instance
-      if (audioRef.current) {
-        audioRef.current.pause()
-        audioRef.current.currentTime = 0
-         audioRef.current = null
-      }
+      // Ensure initialized (just in case)
+      initGlobalAudio()
+      
+      const audio = globalAudio!
+      
+      // Reset for this run
+      audio.pause()
+      audio.currentTime = 0
+      audioRef.current = audio
 
-      const audio = new Audio('/jio-mosaic-full-audio.mp3')
-      // Store start time of animation to sync audio later if needed
       const animStartTime = performance.now()
       
-      // Define Safe Play Function
-      const playSafe = () => {
-        if (audioRef.current !== audio) return // Ensure we are playing the current instance
-        
-        const tryPlay = () => {
+      const runPlayback = () => {
+         // Metadata safety check inside the execution wrapper
+         const attemptPlay = () => {
              const elapsed = (performance.now() - animStartTime) / 1000
+             // Standard sync logic
              if (isNaN(audio.duration) || elapsed < audio.duration) {
-                 audio.currentTime = elapsed
-                 audio.play().catch(e => console.error("Audio play blocked (fallback):", e))
+                 audio.currentTime = Math.max(0, elapsed)
+                 audio.play().catch(e => console.error("Final play blocked:", e))
              }
-        }
+         }
 
-        if (audio.readyState >= 1) { // HAVE_METADATA
-             tryPlay()
-        } else {
-             audio.addEventListener('loadedmetadata', tryPlay, { once: true })
-             // Also try to load if not started? Audio() usually auto-loads.
-        }
+         if (audio.readyState >= 1) { // HAVE_METADATA
+             attemptPlay()
+         } else {
+             audio.addEventListener('loadedmetadata', attemptPlay, { once: true })
+         }
       }
 
-      audioRef.current = audio
-
-      // Check if unlocked (either by local ref or browser state)
-      // @ts-ignore
-      const browserActive = typeof navigator !== 'undefined' && navigator.userActivation?.hasBeenActive
-      
-      if (hasInteractedRef.current || browserActive) {
-          playSafe()
+      if (isAudioUnlocked) {
+          runPlayback()
       } else {
-          // Defer playback
-          pendingPlayRef.current = playSafe
+          // Queue it for whenever the user clicks/taps next (or if the unlock promise resolves)
+          pendingPlayCallback = runPlayback
       }
-      audioRef.current = audio
+
     } catch (err) {
       console.error('Audio setup failed:', err)
-      // Ensure we don't show UI errors, just log
     }
 
     // Clear background
