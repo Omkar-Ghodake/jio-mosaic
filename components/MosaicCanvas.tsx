@@ -216,11 +216,19 @@ export default function MosaicCanvas({ images }: MosaicCanvasProps) {
       const playSafe = () => {
         if (audioRef.current !== audio) return // Ensure we are playing the current instance
         
-        // Sync if delayed
-        const elapsed = (performance.now() - animStartTime) / 1000
-        if (elapsed < audio.duration) {
-            audio.currentTime = elapsed
-            audio.play().catch(e => console.warn("Audio play blocked (fallback):", e))
+        const tryPlay = () => {
+             const elapsed = (performance.now() - animStartTime) / 1000
+             if (isNaN(audio.duration) || elapsed < audio.duration) {
+                 audio.currentTime = elapsed
+                 audio.play().catch(e => console.error("Audio play blocked (fallback):", e))
+             }
+        }
+
+        if (audio.readyState >= 1) { // HAVE_METADATA
+             tryPlay()
+        } else {
+             audio.addEventListener('loadedmetadata', tryPlay, { once: true })
+             // Also try to load if not started? Audio() usually auto-loads.
         }
       }
 
